@@ -31,8 +31,8 @@ body{min-height:100vh}
 #nowLine{position:absolute;top:68px;bottom:0;width:4px;background:#ff2222;z-index:30;box-shadow:0 0 10px rgba(255,0,0,.7);pointer-events:none}
 #nowBubble{position:absolute;top:44px;transform:translateX(-50%);background:#ff2222;color:white;font-weight:900;border-radius:8px;padding:5px 8px;z-index:31;pointer-events:none}
 .panel{margin:14px auto 0;width:calc(100% - 40px);background:#080808;color:white;border-radius:14px;padding:16px}
-.panel h2{margin:0 0 10px} #weatherGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;background:#333;border-radius:10px;overflow:hidden}
-.wcell{background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;min-height:150px} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
+.panel h2{margin:0 0 10px} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
+.wcell{position:absolute;top:0;bottom:0;background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;border-right:1px solid #ddd} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
 #toast{position:fixed;z-index:100;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
 .pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .item{padding:8px 0;border-bottom:1px solid #333}
@@ -109,7 +109,7 @@ function updateNowLine(){const h=currentHour(),c=Math.max(START,Math.min(END,h))
 function showFavs(){const p=document.getElementById('favPanel'),f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');p.style.display='block';document.getElementById('nowPanel').style.display='none'}
 function showNow(){const p=document.getElementById('nowPanel'),h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');p.style.display='block';document.getElementById('favPanel').style.display='none'}
 function icon(c){if([0,1].includes(c))return'☀️';if(c===2)return'🌤️';if([3,45,48].includes(c))return'☁️';if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧️';if([95,96,99].includes(c))return'⛈️';return'🌥️'}
-async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-17&end_date=2026-08-18';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-17':'2026-08-18',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class="wcell"><div class="wtime">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Maandag 17 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
+async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-17&end_date=2026-08-18';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-17':'2026-08-18',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class=\"wcell\" style=\"left:${((h-14)/12)*100}%;width:${100/12}%\"><div class=\"wtime\">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Maandag 17 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
 async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
 buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
 
@@ -144,13 +144,19 @@ function fitOverview(){
   const sw = zoomSheet.offsetWidth;
   const sh = zoomSheet.offsetHeight;
 
-  zMin = Math.min(vw / sw, vh / sh);
-  zScale = zMin;
-
-  // Horizontaal centreren, verticaal vanaf de bovenkant zodat dagtitel zichtbaar blijft.
-  zX = (vw - sw * zScale) / 2;
-  zY = 0;
-
+  if (vw >= 1000) {
+    // PC / grote tablet: toon op natuurlijke grootte, gecentreerd.
+    zMin = Math.min(1, vw / sw);
+    zScale = zMin;
+    zX = Math.max(0, (vw - sw * zScale) / 2);
+    zY = 0;
+  } else {
+    // Mobiel: volledig overzicht bij openen.
+    zMin = Math.min(vw / sw, vh / sh);
+    zScale = zMin;
+    zX = (vw - sw * zScale) / 2;
+    zY = 0;
+  }
   zApply();
 }
 function zoomAt(clientX, clientY, newScale){
