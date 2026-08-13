@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1200,user-scalable=yes,maximum-scale=5,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>Zondag Kermis Wervershoof 2026</title>
 <style>
 :root{--start:14;--end:26;--hours:12;--labelw:190px;--subw:88px}
@@ -38,6 +38,30 @@ body{min-height:100vh}
 .item{padding:8px 0;border-bottom:1px solid #333}
 #rainAlert{position:fixed;z-index:85;left:10px;right:10px;bottom:72px;display:none;background:#0d2840;color:white;border-radius:12px;padding:10px 12px;font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
 @media(max-width:700px){.title{width:100%;font-size:26px}}
+
+/* Mobiele overzichts- en zoomlaag */
+html,body{width:100%;height:100%;overflow:hidden}
+#zoomViewport{
+  position:fixed;
+  left:0; right:0;
+  top:62px; bottom:0;
+  overflow:hidden;
+  background:#111;
+  touch-action:none;
+}
+#sheet{
+  position:absolute !important;
+  left:0; top:0;
+  width:1200px;
+  min-width:1200px !important;
+  transform-origin:0 0;
+  will-change:transform;
+}
+#wrap{
+  position:static !important;
+  overflow:visible !important;
+}
+
 </style>
 </head>
 <body>
@@ -46,7 +70,7 @@ body{min-height:100vh}
 <button class="primary" onclick="showNow()">🔴 NU / STRAKS</button>
 <button class="primary" onclick="showFavs()">⭐ Favorieten</button><button class="dark" onclick="location.href='maandag-native.html'">Volgende →</button>
 </div>
-<div id="wrap"><div id="sheet">
+<div id="zoomViewport"><div id="wrap"><div id="sheet">
 <div class="title">ZONDAG KERMIS</div>
 <div class="timeline" id="timeline"></div><div id="nowLine"></div><div id="nowBubble"></div>
 <div class="rows">
@@ -68,7 +92,7 @@ body{min-height:100vh}
 </div><div></div></div>
 </div>
 <div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
-</div></div>
+</div></div></div>
 <div id="favPanel" class="pop"></div><div id="nowPanel" class="pop"></div><div id="toast"></div><div id="rainAlert"></div>
 <script>
 const START=14,END=26,HOURS=12,ACTS=[["Van Rooijen", "", "KONING", 20, 25.5], ["Het Café", "", "EDDIE Y LOS GRASOSOS", 18, 21], ["Het Café", "", "CARPET BURNS", 21, 25.5], ["Quicksilver", "BINNEN", "DJ TINO", 21, 26], ["Quicksilver", "BUITEN", "DJ JEROEN", 18, 22], ["Quicksilver", "BUITEN", "DJ JOOPY", 22, 25], ["'t Fortuin", "STRAAT", "JEROEN GMELICH", 16, 19.5], ["'t Fortuin", "STRAAT", "DJ CEES WEEL / DJ FERRY", 19.5, 25.5], ["'t Fortuin", "TENT", "ABBA EXPERIENCE", 17, 20], ["'t Fortuin", "TENT", "JADA BORSATO", 21, 22], ["'t Fortuin", "TENT", "JURRE JARING", 22, 23], ["'t Fortuin", "TENT", "BAS VAN SAAZE", 23, 25.5]],PAGE='zondag';
@@ -88,5 +112,99 @@ function icon(c){if([0,1].includes(c))return'☀️';if(c===2)return'🌤️';if
 async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-16&end_date=2026-08-17';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-16':'2026-08-17',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class="wcell"><div class="wtime">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Zondag 16 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
 async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
 buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
+
+/* --- eigen mobiel zoom/pan systeem --- */
+const zoomViewport = document.getElementById('zoomViewport');
+const zoomSheet = document.getElementById('sheet');
+
+let zScale = 1, zMin = 1, zMax = 5, zX = 0, zY = 0;
+let zPointers = new Map();
+let zStartScale = 1, zStartDist = 0, zStartX = 0, zStartY = 0, zStartMid = {x:0,y:0};
+let zMoved = false;
+
+function zDistance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function zMid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+
+function zClamp(){
+  const vw = zoomViewport.clientWidth, vh = zoomViewport.clientHeight;
+  const sw = zoomSheet.offsetWidth * zScale;
+  const sh = zoomSheet.offsetHeight * zScale;
+  if(sw <= vw) zX = (vw-sw)/2;
+  else zX = Math.min(0, Math.max(vw-sw, zX));
+  if(sh <= vh) zY = 0;
+  else zY = Math.min(0, Math.max(vh-sh, zY));
+}
+function zApply(){
+  zClamp();
+  zoomSheet.style.transform = `translate(${zX}px,${zY}px) scale(${zScale})`;
+}
+function fitOverview(){
+  const vw = zoomViewport.clientWidth;
+  zMin = vw / zoomSheet.offsetWidth;
+  zScale = zMin;
+  zX = 0;
+  zY = 0;
+  zApply();
+}
+function zoomAt(clientX, clientY, newScale){
+  const old = zScale;
+  newScale = Math.max(zMin, Math.min(zMax, newScale));
+  const ix = (clientX-zX)/old, iy=(clientY-zY)/old;
+  zScale = newScale;
+  zX = clientX - ix*zScale;
+  zY = clientY - iy*zScale;
+  zApply();
+}
+
+zoomViewport.addEventListener('pointerdown', e=>{
+  zoomViewport.setPointerCapture(e.pointerId);
+  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  zMoved = false;
+  if(zPointers.size===1){
+    zStartX=zX; zStartY=zY; zStartMid={x:e.clientX,y:e.clientY};
+  } else if(zPointers.size===2){
+    const p=[...zPointers.values()];
+    zStartDist=zDistance(p[0],p[1]); zStartScale=zScale;
+    zStartX=zX; zStartY=zY; zStartMid=zMid(p[0],p[1]);
+  }
+});
+zoomViewport.addEventListener('pointermove', e=>{
+  if(!zPointers.has(e.pointerId)) return;
+  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(zPointers.size===1){
+    const p=[...zPointers.values()][0];
+    const dx=p.x-zStartMid.x, dy=p.y-zStartMid.y;
+    if(Math.hypot(dx,dy)>6) zMoved=true;
+    if(zScale > zMin+0.001){
+      zX=zStartX+dx; zY=zStartY+dy; zApply();
+    }
+  } else if(zPointers.size===2){
+    zMoved=true;
+    const p=[...zPointers.values()], md=zMid(p[0],p[1]), d=zDistance(p[0],p[1]);
+    const newScale=Math.max(zMin,Math.min(zMax,zStartScale*(d/zStartDist)));
+    const ix=(zStartMid.x-zStartX)/zStartScale, iy=(zStartMid.y-zStartY)/zStartScale;
+    zScale=newScale;
+    zX=md.x-ix*zScale; zY=md.y-iy*zScale;
+    zApply();
+  }
+});
+function zEnd(e){
+  zPointers.delete(e.pointerId);
+  if(zPointers.size===1){
+    const p=[...zPointers.values()][0];
+    zStartX=zX; zStartY=zY; zStartMid={x:p.x,y:p.y};
+  }
+}
+zoomViewport.addEventListener('pointerup',zEnd);
+zoomViewport.addEventListener('pointercancel',zEnd);
+
+zoomViewport.addEventListener('dblclick', e=>{
+  if(zScale > zMin*1.15) fitOverview();
+  else zoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
+});
+
+window.addEventListener('resize',fitOverview);
+setTimeout(fitOverview,100);
+
 </script>
 </body></html>
