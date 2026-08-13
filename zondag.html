@@ -94,7 +94,7 @@ html,body{
   border:3px solid transparent;border-radius:4px;background:rgba(255,255,255,0.001);
 }
 .actHotspot.fav{
-  border-color:#ffd83d;
+  border-color:#ffd83d;background:rgba(255,216,61,.12);
   box-shadow:0 0 10px 3px rgba(255,216,61,.75), inset 0 0 0 2px rgba(0,0,0,.28);
 }
 .actHotspot .badge{
@@ -378,7 +378,7 @@ async function updateRainAlert(){
 updateRainAlert(); setInterval(updateRainAlert,15*60*1000);
 
 
-const TAP_ACTS = [{"venue": "Van Rooijen", "name": "Koning", "start": 20, "end": 25.5, "y": 183, "h": 127}, {"venue": "Het Café", "name": "Eddie y los Grasosos", "start": 18, "end": 21, "y": 330, "h": 127}, {"venue": "Het Café", "name": "Carpet Burns", "start": 21, "end": 25.5, "y": 330, "h": 127}, {"venue": "Quicksilver binnen", "name": "DJ Tino", "start": 21, "end": 26, "y": 477, "h": 64}, {"venue": "Quicksilver buiten", "name": "DJ Jeroen", "start": 18, "end": 22, "y": 541, "h": 62}, {"venue": "Quicksilver buiten", "name": "DJ Joopy", "start": 22, "end": 25, "y": 541, "h": 62}, {"venue": "'t Fortuin straat", "name": "Jeroen Gmelich", "start": 16, "end": 19.5, "y": 624, "h": 64}, {"venue": "'t Fortuin straat", "name": "DJ Cees Weel / DJ Ferry", "start": 19.5, "end": 25.5, "y": 624, "h": 64}, {"venue": "'t Fortuin tent", "name": "Abba Experience", "start": 17, "end": 20, "y": 688, "h": 63}, {"venue": "'t Fortuin tent", "name": "Jada Borsato", "start": 21, "end": 22, "y": 688, "h": 63}, {"venue": "'t Fortuin tent", "name": "Jurre Jaring", "start": 22, "end": 23, "y": 688, "h": 63}, {"venue": "'t Fortuin tent", "name": "Bas van Saaze", "start": 23, "end": 25.5, "y": 688, "h": 63}];
+const TAP_ACTS = [{"venue": "Van Rooijen", "name": "Koning", "start": 20, "end": 25.5, "y": 226, "h": 141}, {"venue": "Het Café", "name": "Eddie y los Grasosos", "start": 18, "end": 21, "y": 405, "h": 140}, {"venue": "Het Café", "name": "Carpet Burns", "start": 21, "end": 25.5, "y": 405, "h": 140}, {"venue": "Quicksilver binnen", "name": "DJ Tino", "start": 21, "end": 26, "y": 582, "h": 70}, {"venue": "Quicksilver buiten", "name": "DJ Jeroen", "start": 18, "end": 22, "y": 652, "h": 70}, {"venue": "Quicksilver buiten", "name": "DJ Joopy", "start": 22, "end": 25, "y": 652, "h": 70}, {"venue": "'t Fortuin straat", "name": "Jeroen Gmelich", "start": 16, "end": 19.5, "y": 759, "h": 70}, {"venue": "'t Fortuin straat", "name": "DJ Cees Weel / DJ Ferry", "start": 19.5, "end": 25.5, "y": 759, "h": 70}, {"venue": "'t Fortuin tent", "name": "Abba Experience", "start": 17, "end": 20, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Jada Borsato", "start": 21, "end": 22, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Jurre Jaring", "start": 22, "end": 23, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Bas van Saaze", "start": 23, "end": 25.5, "y": 829, "h": 71}];
 function favIdFor(a){return PAGE_DAY+'|'+a.venue+'|'+a.name+'|'+a.start;}
 function drawActHotspots(){
   const host=document.getElementById('actOverlay');
