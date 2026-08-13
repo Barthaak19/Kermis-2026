@@ -112,8 +112,36 @@ function buildTimeline(){const tl=document.getElementById('timeline');for(let i=
 function renderActs(){const favs=getFavs();document.querySelectorAll('.track[data-venue]').forEach(t=>t.innerHTML='');ACTS.forEach(a=>{const[venue,sub,name,start,end]=a;const track=[...document.querySelectorAll('.track[data-venue]')].find(t=>t.dataset.venue===venue&&t.dataset.sub===sub);if(!track)return;const b=document.createElement('div');b.className='act'+(favs.includes(favId(a))?' fav':'');b.style.left=pct(start)+'%';b.style.width=(pct(end)-pct(start))+'%';b.innerHTML=`<span>${name}</span><span class="star">★</span>`;b.addEventListener('click',()=>{let f=getFavs(),id=favId(a),i=f.indexOf(id),added=i<0;if(added)f.push(id);else f.splice(i,1);setFavs(f);renderActs();toast((added?'⭐ Favoriet: ':'☆ Verwijderd: ')+name)});track.appendChild(b)})}
 function currentHour(){const n=new Date();let h=n.getHours()+n.getMinutes()/60+n.getSeconds()/3600;if(n.getHours()<3)h+=24;return h}
 function updateNowLine(){const h=currentHour(),c=Math.max(START,Math.min(END,h)),tl=document.getElementById('timeline'),left=tl.offsetLeft+(c-START)/(END-START)*tl.clientWidth;document.getElementById('nowLine').style.left=left+'px';document.getElementById('nowBubble').style.left=left+'px';document.getElementById('nowBubble').textContent=new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}
-function showFavs(){const p=document.getElementById('favPanel'),f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');p.style.display='block';document.getElementById('nowPanel').style.display='none'}
-function showNow(){const p=document.getElementById('nowPanel'),h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');p.style.display='block';document.getElementById('favPanel').style.display='none'}
+function showFavs(){
+  const p=document.getElementById('favPanel');
+  const nowPanel=document.getElementById('nowPanel');
+
+  // Nogmaals op Favorieten = inklappen.
+  if(p.style.display==='block'){
+    p.style.display='none';
+    return;
+  }
+
+  const f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));
+  p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');
+  nowPanel.style.display='none';
+  p.style.display='block';
+}
+function showNow(){
+  const p=document.getElementById('nowPanel');
+  const favPanel=document.getElementById('favPanel');
+
+  // Nogmaals op NU / STRAKS = inklappen.
+  if(p.style.display==='block'){
+    p.style.display='none';
+    return;
+  }
+
+  const h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);
+  p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');
+  favPanel.style.display='none';
+  p.style.display='block';
+}
 function icon(c){if([0,1].includes(c))return'☀️';if(c===2)return'🌤️';if([3,45,48].includes(c))return'☁️';if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧️';if([95,96,99].includes(c))return'⛈️';return'🌥️'}
 async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-17&end_date=2026-08-18';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-17':'2026-08-18',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class=\"wcell\" style=\"left:${((h-14)/12)*100}%;width:${100/12}%\"><div class=\"wtime\">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Maandag 17 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
 async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
