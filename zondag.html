@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=no,viewport-fit=cover">
+<title>Zondag Kermis - live schema + weer</title>
+<style>
+html,body{
+  margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;
+  touch-action:none;font-family:Arial,Helvetica,sans-serif;
+}
+#viewport{position:fixed;inset:0;overflow:hidden;background:#000;touch-action:none;}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;touch-action:none;}
+#schedule{display:block;width:1650px;height:928px;user-select:none;-webkit-user-drag:none;pointer-events:none;}
+
+#timebar{
+  position:absolute;top:118px;width:5px;height:1225px;background:#ff1616;border-radius:4px;
+  box-shadow:0 0 12px 4px rgba(255,0,0,.72);pointer-events:none;z-index:8;
+}
+#timelabel{
+  position:absolute;top:78px;transform:translateX(-50%);background:#ff1616;color:#fff;
+  padding:7px 11px;border-radius:8px;font-size:26px;line-height:1;font-weight:900;
+  box-shadow:0 0 8px rgba(0,0,0,.45);pointer-events:none;white-space:nowrap;z-index:9;
+}
+
+#weatherPanel{
+  position:relative;box-sizing:border-box;width:1650px;height:500px;background:#050505;color:white;
+  padding:26px 34px 30px;border-top:5px solid #ffd83d;user-select:none;
+}
+#weatherPanel h2{margin:0 0 5px;font-size:36px;line-height:1;color:#fff;text-transform:uppercase;}
+#weatherMeta{font-size:21px;color:#d9d9d9;white-space:nowrap;}
+#legend{position:absolute;right:34px;top:28px;font-size:19px;color:#eee;}
+
+#weatherFrame{
+  position:absolute;left:399px;top:120px;width:1001px;height:285px;
+  background:#f7f7f7;color:#111;border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.35);
+}
+#weatherTicksTop{
+  position:absolute;left:399px;top:82px;width:1001px;height:34px;color:white;font-size:19px;
+}
+.tickLabel{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;font-weight:700;}
+.tickLine{position:absolute;top:0;width:1px;height:285px;background:#ddd;}
+.weatherCell{
+  position:absolute;top:0;height:285px;box-sizing:border-box;text-align:center;padding-top:43px;
+  border-right:1px solid #ddd;font-weight:700;
+}
+.icon{font-size:35px;margin-bottom:16px;line-height:1;}
+.temp{font-size:28px;margin-bottom:18px;}
+.rain{font-size:17px;margin-bottom:14px;}
+.wind{font-size:18px;}
+
+#weatherAxis{
+  position:absolute;left:399px;top:432px;width:1001px;height:45px;border-top:4px solid #ffd83d;color:white;
+}
+.axisTick{position:absolute;top:0;width:1px;height:12px;background:rgba(255,255,255,.55);}
+.axisLabel{position:absolute;top:17px;transform:translateX(-50%);font-size:17px;white-space:nowrap;}
+
+#hint{
+  position:fixed;left:14px;right:14px;bottom:22px;z-index:20;color:white;
+  background:rgba(0,0,0,.62);padding:10px 12px;border-radius:10px;font-size:16px;text-align:center;
+  transition:opacity .6s;pointer-events:none;
+}
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <img id="schedule" src="zondag.png" alt="Zondag Kermis blokkenschema">
+    <div id="timebar"></div>
+    <div id="timelabel"></div>
+    <section id="weatherPanel">
+      <h2>📍 Weer in Wervershoof</h2>
+      <div id="weatherMeta">Live uurverwachting voor zondag 16 augustus</div>
+      <div id="legend">☀️ zonnig &nbsp; ☁️ bewolkt &nbsp; 🌧️ regen &nbsp; 💨 wind</div>
+      <div id="weatherTicksTop"></div>
+      <div id="weatherFrame"></div>
+      <div id="weatherAxis"></div>
+    </section>
+  </div>
+</div>
+<div id="hint">Knijp om te zoomen · sleep om te bewegen · dubbel tik = reset</div>
+
+<script>
+const IMG_W=1650, IMG_H=928, WEATHER_H=500, TOTAL_H=IMG_H+WEATHER_H;
+const START_HOUR=14, END_HOUR=26;
+const X_START=399, X_END=1400, TIMELINE_W=X_END-X_START, HOURS=END_HOUR-START_HOUR;
+const EVENT_DATE="2026-08-16";
+
+const viewport=document.getElementById('viewport');
+const stage=document.getElementById('stage');
+const bar=document.getElementById('timebar');
+const label=document.getElementById('timelabel');
+const hint=document.getElementById('hint');
+const weatherFrame=document.getElementById('weatherFrame');
+const weatherTicksTop=document.getElementById('weatherTicksTop');
+const weatherAxis=document.getElementById('weatherAxis');
+const weatherMeta=document.getElementById('weatherMeta');
+
+let scale=1,x=0,y=0,minScale=1,maxScale=5;
+let pointers=new Map(),startDist=0,startScale=1,startX=0,startY=0,startMid={x:0,y:0},lastTap=0;
+
+function clampPosition(){
+  const vw=viewport.clientWidth,vh=viewport.clientHeight,sw=IMG_W*scale,sh=TOTAL_H*scale;
+  if(sw<=vw)x=(vw-sw)/2; else x=Math.min(0,Math.max(vw-sw,x));
+  if(sh<=vh)y=(vh-sh)/2; else y=Math.min(0,Math.max(vh-sh,y));
+}
+function applyTransform(){clampPosition();stage.style.transform=`translate(${x}px,${y}px) scale(${scale})`;}
+function fitToScreen(){
+  const vw=viewport.clientWidth,vh=viewport.clientHeight;
+  minScale=Math.min(vw/IMG_W,vh/TOTAL_H);
+  scale=minScale;x=(vw-IMG_W*scale)/2;y=0;applyTransform();
+}
+function eventDecimalHour(){
+  const now=new Date();
+  const y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,"0"),d=String(now.getDate()).padStart(2,"0");
+  const today=`${y}-${m}-${d}`;
+  let h=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600;
+  if(today==="2026-08-17" && now.getHours()<3) h+=24;
+  return h;
+}
+function updateTimeBar(){
+  const now=new Date();
+  let dec=eventDecimalHour();
+  const frac=Math.max(0,Math.min(1,(dec-START_HOUR)/(END_HOUR-START_HOUR)));
+  const px=X_START+frac*TIMELINE_W;
+  bar.style.left=(px-2.5)+"px";
+  label.style.left=px+"px";
+  label.textContent=now.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+}
+
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
+viewport.addEventListener('pointerdown',e=>{
+  viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const now=Date.now();
+  if(now-lastTap<300&&pointers.size===1){fitToScreen();lastTap=0;return;}
+  lastTap=now;
+  if(pointers.size===1){startX=x;startY=y;startMid={x:e.clientX,y:e.clientY};}
+  else if(pointers.size===2){const pts=[...pointers.values()];startDist=dist(pts[0],pts[1]);startScale=scale;startX=x;startY=y;startMid=mid(pts[0],pts[1]);}
+});
+viewport.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+    const p=[...pointers.values()][0];x=startX+(p.x-startMid.x);y=startY+(p.y-startMid.y);applyTransform();
+  } else if(pointers.size===2){
+    const pts=[...pointers.values()],newDist=dist(pts[0],pts[1]),newMid=mid(pts[0],pts[1]);
+    scale=Math.max(minScale,Math.min(maxScale,startScale*(newDist/startDist)));
+    const imagePointX=(startMid.x-startX)/startScale,imagePointY=(startMid.y-startY)/startScale;
+    x=newMid.x-imagePointX*scale;y=newMid.y-imagePointY*scale;applyTransform();
+  }
+});
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size===1){const p=[...pointers.values()][0];startX=x;startY=y;startMid={x:p.x,y:p.y};}
+}
+viewport.addEventListener('pointerup',endPointer);
+viewport.addEventListener('pointercancel',endPointer);
+viewport.addEventListener('pointerleave',endPointer);
+
+function iconFor(code){
+  if([0,1].includes(code))return "☀️";
+  if(code===2)return "🌤️";
+  if([3,45,48].includes(code))return "☁️";
+  if([51,53,55,61,63,65,80,81,82].includes(code))return "🌧️";
+  if([95,96,99].includes(code))return "⛈️";
+  return "🌥️";
+}
+function formatHour(h){return String(h%24).padStart(2,"0")+":00";}
+
+function drawTimeline(){
+  let top="",axis="",lines="";
+  for(let i=0;i<=HOURS;i++){
+    const left=(i/HOURS)*TIMELINE_W;
+    top+=`<div class="tickLabel" style="left:${left}px">${formatHour(START_HOUR+i)}</div>`;
+    axis+=`<div class="axisTick" style="left:${left}px"></div><div class="axisLabel" style="left:${left}px">${formatHour(START_HOUR+i)}</div>`;
+    lines+=`<div class="tickLine" style="left:${left}px"></div>`;
+  }
+  weatherTicksTop.innerHTML=top;
+  weatherAxis.innerHTML=axis;
+  weatherFrame.innerHTML=lines;
+}
+
+async function updateWeather(){
+  drawTimeline();
+  try{
+    // Wervershoof, Noord-Holland
+    const url="https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-16&end_date=2026-08-17";
+    const r=await fetch(url,{cache:"no-store"});
+    if(!r.ok) throw new Error("weerdata niet beschikbaar");
+    const data=await r.json();
+    let cells="";
+    const cellW=TIMELINE_W/HOURS;
+    for(let i=0;i<HOURS;i++){
+      const h=START_HOUR+i;
+      const date=h<24?"2026-08-16":"2026-08-17";
+      const hh=String(h%24).padStart(2,"0");
+      const key=`${date}T${hh}:00`;
+      const idx=data.hourly.time.indexOf(key);
+      const temp=idx>=0?Math.round(data.hourly.temperature_2m[idx]):"--";
+      const rain=idx>=0?data.hourly.precipitation[idx]:"--";
+      const chance=idx>=0?data.hourly.precipitation_probability[idx]:"--";
+      const wind=idx>=0?Math.round(data.hourly.wind_speed_10m[idx]):"--";
+      const gust=idx>=0?Math.round(data.hourly.wind_gusts_10m[idx]):"--";
+      const code=idx>=0?data.hourly.weather_code[idx]:3;
+      cells+=`<div class="weatherCell" style="left:${i*cellW}px;width:${cellW}px">
+        <div class="icon">${iconFor(code)}</div>
+        <div class="temp">${temp}°</div>
+        <div class="rain">💧 ${rain} mm · ${chance}%</div>
+        <div class="wind">↗ ${wind} km/u<br><small>vlaag ${gust}</small></div>
+      </div>`;
+    }
+    weatherFrame.innerHTML+=cells;
+    weatherMeta.textContent="Zondag 16 augustus · 14:00 t/m 02:00 · laatst ververst: "+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    weatherMeta.textContent="Zondag 16 augustus · live weer tijdelijk niet beschikbaar";
+  }
+}
+
+window.addEventListener('resize',fitToScreen);
+setTimeout(()=>{hint.style.opacity="0";},5500);
+fitToScreen();updateTimeBar();updateWeather();
+setInterval(updateTimeBar,1000);
+setInterval(updateWeather,10*60*1000);
+</script>
+</body>
+</html>
