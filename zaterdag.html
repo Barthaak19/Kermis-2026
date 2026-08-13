@@ -87,6 +87,27 @@ html,body{
   font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)
 }
 
+
+#actOverlay{position:absolute;left:0;top:0;width:1650px;height:928px;z-index:7;pointer-events:none}
+.actHotspot{
+  position:absolute;box-sizing:border-box;pointer-events:auto;
+  border:3px solid transparent;border-radius:4px;background:rgba(255,255,255,0.001);
+}
+.actHotspot.fav{
+  border-color:#ffd83d;
+  box-shadow:0 0 10px 3px rgba(255,216,61,.75), inset 0 0 0 2px rgba(0,0,0,.28);
+}
+.actHotspot .badge{
+  display:none;position:absolute;right:4px;top:3px;background:#ffd83d;color:#111;
+  border-radius:999px;padding:2px 5px;font-size:17px;line-height:1;font-weight:900;
+}
+.actHotspot.fav .badge{display:block}
+#tapToast{
+  position:fixed;z-index:40;left:50%;bottom:24px;transform:translateX(-50%);
+  background:rgba(0,0,0,.9);color:#fff;border-radius:999px;padding:10px 16px;
+  font-size:14px;font-weight:800;display:none;white-space:nowrap;pointer-events:none;
+}
+
 </style>
 </head>
 <body>
@@ -103,7 +124,7 @@ html,body{
 
 <div id="viewport">
   <div id="stage">
-    <img id="schedule" src="zaterdag.png" alt="Zaterdag Kermis blokkenschema">
+    <div id="actOverlay"></div><img id="schedule" src="zaterdag.png" alt="Zaterdag Kermis blokkenschema">
     <div id="timebar"></div>
     <div id="timelabel"></div>
     <section id="weatherPanel">
@@ -116,7 +137,7 @@ html,body{
     </section>
   </div>
 </div>
-<div id="hint">Knijp om te zoomen · sleep om te bewegen · dubbel tik = reset</div>
+<div id="tapToast"></div><div id="hint">Knijp om te zoomen · sleep om te bewegen · dubbel tik = reset</div>
 
 <script>
 const IMG_W=1650, IMG_H=928, WEATHER_H=500, TOTAL_H=IMG_H+WEATHER_H;
@@ -355,6 +376,47 @@ async function updateRainAlert(){
   }catch(e){}
 }
 updateRainAlert(); setInterval(updateRainAlert,15*60*1000);
+
+
+const TAP_ACTS = [{"venue": "Het Café", "name": "4 Tinten Grijs", "start": 20, "end": 25, "y": 330, "h": 127}, {"venue": "Quicksilver buiten", "name": "DJ MDV", "start": 21, "end": 22.5, "y": 541, "h": 62}, {"venue": "Quicksilver buiten", "name": "Likke Pehp", "start": 22.5, "end": 25, "y": 541, "h": 62}, {"venue": "'t Fortuin straat", "name": "DJ Jacco Deen", "start": 21, "end": 22.5, "y": 624, "h": 64}, {"venue": "'t Fortuin straat", "name": "Luuk van der Boom", "start": 22.5, "end": 25, "y": 624, "h": 64}, {"venue": "'t Fortuin tent", "name": "DJ Cees Weel", "start": 21, "end": 23, "y": 688, "h": 63}, {"venue": "'t Fortuin tent", "name": "Q Music 'Foute Uur Live'", "start": 23, "end": 26, "y": 688, "h": 63}];
+function favIdFor(a){return PAGE_DAY+'|'+a.venue+'|'+a.name+'|'+a.start;}
+function drawActHotspots(){
+  const host=document.getElementById('actOverlay');
+  const favs=getFavs();
+  host.innerHTML='';
+  TAP_ACTS.forEach(a=>{
+    const el=document.createElement('div');
+    el.className='actHotspot'+(favs.includes(favIdFor(a))?' fav':'');
+    el.style.left=xForDecimal(a.start)+'px';
+    el.style.top=a.y+'px';
+    el.style.width=(xForDecimal(Math.min(a.end,26))-xForDecimal(a.start))+'px';
+    el.style.height=a.h+'px';
+    el.title='Tik om favoriet te maken: '+a.name;
+    el.innerHTML='<span class="badge">★</span>';
+    let downX=0,downY=0;
+    el.addEventListener('pointerdown',ev=>{downX=ev.clientX;downY=ev.clientY;});
+    el.addEventListener('pointerup',ev=>{
+      if(Math.hypot(ev.clientX-downX,ev.clientY-downY)>10) return;
+      ev.stopPropagation();
+      const id=favIdFor(a);
+      let f=getFavs();
+      const i=f.indexOf(id);
+      let added=false;
+      if(i>=0) f.splice(i,1); else {f.push(id);added=true;}
+      setFavs(f);
+      drawActHotspots();
+      const t=document.getElementById('tapToast');
+      t.textContent=(added?'⭐ Favoriet: ':'☆ Verwijderd: ')+a.name;
+      t.style.display='block';
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer=setTimeout(()=>t.style.display='none',1600);
+    });
+    host.appendChild(el);
+  });
+}
+drawActHotspots();
+const oldToggleFav=toggleFav;
+toggleFav=function(id){oldToggleFav(id);drawActHotspots();}
 
 </script>
 </body>
