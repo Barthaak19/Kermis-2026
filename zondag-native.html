@@ -44,7 +44,7 @@ html,body{width:100%;height:100%;overflow:hidden}
 #zoomViewport{
   position:fixed;
   left:0; right:0;
-  top:62px; bottom:0;
+  top:64px; bottom:0;
   overflow:hidden;
   background:#111;
   touch-action:none;
@@ -140,10 +140,17 @@ function zApply(){
 }
 function fitOverview(){
   const vw = zoomViewport.clientWidth;
-  zMin = vw / zoomSheet.offsetWidth;
+  const vh = zoomViewport.clientHeight;
+  const sw = zoomSheet.offsetWidth;
+  const sh = zoomSheet.offsetHeight;
+
+  zMin = Math.min(vw / sw, vh / sh);
   zScale = zMin;
-  zX = 0;
+
+  // Horizontaal centreren, verticaal vanaf de bovenkant zodat dagtitel zichtbaar blijft.
+  zX = (vw - sw * zScale) / 2;
   zY = 0;
+
   zApply();
 }
 function zoomAt(clientX, clientY, newScale){
