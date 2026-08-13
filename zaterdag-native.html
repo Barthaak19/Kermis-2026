@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
+<title>Zaterdag Kermis Wervershoof 2026</title>
+<style>
+:root{--start:14;--end:26;--hours:12;--labelw:190px;--subw:88px}
+*{box-sizing:border-box}
+html,body{margin:0;background:#111;color:#111;font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh}
+.topbar{position:sticky;top:0;z-index:70;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:rgba(10,10,10,.96);color:white;border-bottom:1px solid #333}
+.topbar button{border:0;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer;touch-action:manipulation}
+.topbar .primary{background:#ffd83d;color:#111} .topbar .dark{background:#2b2b2b;color:white}
+#wrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch}
+#sheet{position:relative;min-width:1200px;background:white;padding-bottom:20px}
+.title{margin:0 auto;width:70%;background:#ffd83d;text-align:center;font-size:34px;font-weight:900;padding:14px}
+.timeline{margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);position:relative;height:82px;border-left:1px solid #333;border-right:1px solid #333}
+.hourLabel{position:absolute;top:18px;transform:translateX(-50%);font-weight:900;font-size:17px;white-space:nowrap}
+.hourLine{position:absolute;top:54px;bottom:-620px;width:1px;background:#555;opacity:.7;z-index:1}
+.rows{position:relative}
+.row{display:grid;grid-template-columns:var(--labelw) var(--subw) 1fr 40px;min-height:126px;position:relative}
+.label{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;text-align:center;color:#111}
+.label.green{background:#39a66d} .label.blue{background:#5570ee} .label.purple{background:#8148f4} .label.red{background:#f44336}
+.sub{display:flex;align-items:center;justify-content:center;font-style:italic;font-weight:900;font-size:18px}
+.track{position:relative;margin-right:40px;overflow:visible}
+.track.green{background:rgba(57,166,109,.28)} .track.blue{background:rgba(85,112,238,.27)} .track.purple{background:rgba(129,72,244,.26)} .track.red{background:rgba(244,67,54,.28)}
+.act{position:absolute;top:0;bottom:0;border:4px solid #111;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-weight:900;font-size:18px;cursor:pointer;z-index:10;user-select:none;touch-action:manipulation}
+.act:active{background:rgba(255,216,61,.28)} .act.fav{border-color:#ffd83d;background:rgba(255,216,61,.23);box-shadow:0 0 0 3px rgba(255,216,61,.25),0 0 14px rgba(255,216,61,.75)}
+.act .star{display:none;position:absolute;right:5px;top:4px;background:#ffd83d;border-radius:999px;padding:2px 5px;font-size:17px} .act.fav .star{display:block}
+#nowLine{position:absolute;top:68px;bottom:0;width:4px;background:#ff2222;z-index:30;box-shadow:0 0 10px rgba(255,0,0,.7);pointer-events:none}
+#nowBubble{position:absolute;top:44px;transform:translateX(-50%);background:#ff2222;color:white;font-weight:900;border-radius:8px;padding:5px 8px;z-index:31;pointer-events:none}
+.panel{margin:14px auto 0;width:calc(100% - 40px);background:#080808;color:white;border-radius:14px;padding:16px}
+.panel h2{margin:0 0 10px} #weatherGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;background:#333;border-radius:10px;overflow:hidden}
+.wcell{background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;min-height:150px} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
+#toast{position:fixed;z-index:100;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
+.pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.item{padding:8px 0;border-bottom:1px solid #333}
+#rainAlert{position:fixed;z-index:85;left:10px;right:10px;bottom:72px;display:none;background:#0d2840;color:white;border-radius:12px;padding:10px 12px;font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+@media(max-width:700px){.title{width:100%;font-size:26px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+<button class="dark" onclick="location.href='index.html'">🏠 Home</button>
+<button class="primary" onclick="showNow()">🔴 NU / STRAKS</button>
+<button class="primary" onclick="showFavs()">⭐ Favorieten</button><button class="dark" onclick="location.href='zondag-native.html'">Volgende →</button>
+</div>
+<div id="wrap"><div id="sheet">
+<div class="title">ZATERDAG KERMIS</div>
+<div class="timeline" id="timeline"></div><div id="nowLine"></div><div id="nowBubble"></div>
+<div class="rows">
+<div class="row"><div class="label green">VAN ROOIJEN</div><div class="sub"></div><div class="track green" data-venue="Van Rooijen" data-sub=""></div><div></div></div>
+<div class="row"><div class="label blue">HET CAFÉ</div><div class="sub"></div><div class="track blue" data-venue="Het Café" data-sub=""></div><div></div></div>
+<div class="row">
+<div class="label purple">QUICKSILVER<br>BAR</div>
+<div><div class="sub" style="height:63px">BINNEN</div><div class="sub" style="height:63px">BUITEN</div></div>
+<div class="track purple" style="height:126px">
+<div class="track purple" data-venue="Quicksilver" data-sub="BINNEN" style="position:absolute;top:0;left:0;right:0;height:63px"></div>
+<div class="track purple" data-venue="Quicksilver" data-sub="BUITEN" style="position:absolute;top:63px;left:0;right:0;height:63px"></div>
+</div><div></div></div>
+<div class="row">
+<div class="label red">'T FORTUIN</div>
+<div><div class="sub" style="height:63px">STRAAT</div><div class="sub" style="height:63px">TENT</div></div>
+<div class="track red" style="height:126px">
+<div class="track red" data-venue="'t Fortuin" data-sub="STRAAT" style="position:absolute;top:0;left:0;right:0;height:63px"></div>
+<div class="track red" data-venue="'t Fortuin" data-sub="TENT" style="position:absolute;top:63px;left:0;right:0;height:63px"></div>
+</div><div></div></div>
+</div>
+<div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
+</div></div>
+<div id="favPanel" class="pop"></div><div id="nowPanel" class="pop"></div><div id="toast"></div><div id="rainAlert"></div>
+<script>
+const START=14,END=26,HOURS=12,ACTS=[["Van Rooijen", "", "GESLOTEN", 20, 25], ["Het Café", "", "4 TINTEN GRIJS", 20, 25], ["Quicksilver", "BINNEN", "GESLOTEN", 21, 26], ["Quicksilver", "BUITEN", "DJ MDV", 21, 22.5], ["Quicksilver", "BUITEN", "LIKKE PEHP", 22.5, 25], ["'t Fortuin", "STRAAT", "DJ JACCO DEEN", 21, 22.5], ["'t Fortuin", "STRAAT", "LUUK VAN DER BOOM", 22.5, 25], ["'t Fortuin", "TENT", "DJ CEES WEEL", 21, 23], ["'t Fortuin", "TENT", "Q MUSIC 'FOUTE UUR LIVE'", 23, 26]],PAGE='zaterdag';
+function pct(h){return((h-START)/(END-START))*100}
+function fmt(h){let hh=Math.floor(h)%24,mm=Math.round((h-Math.floor(h))*60);return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')}
+function favId(a){return PAGE+'|'+a[0]+'|'+a[1]+'|'+a[2]+'|'+a[3]}
+function getFavs(){try{return JSON.parse(localStorage.getItem('kermis2026_favs')||'[]')}catch(e){return[]}}
+function setFavs(v){localStorage.setItem('kermis2026_favs',JSON.stringify(v))}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>e.style.display='none',1500)}
+function buildTimeline(){const tl=document.getElementById('timeline');for(let i=0;i<=HOURS;i++){let l=document.createElement('div'),g=document.createElement('div'),left=(i/HOURS)*100;l.className='hourLabel';l.style.left=left+'%';l.textContent=fmt(START+i);g.className='hourLine';g.style.left=left+'%';tl.append(l,g)}}
+function renderActs(){const favs=getFavs();document.querySelectorAll('.track[data-venue]').forEach(t=>t.innerHTML='');ACTS.forEach(a=>{const[venue,sub,name,start,end]=a;const track=[...document.querySelectorAll('.track[data-venue]')].find(t=>t.dataset.venue===venue&&t.dataset.sub===sub);if(!track)return;const b=document.createElement('div');b.className='act'+(favs.includes(favId(a))?' fav':'');b.style.left=pct(start)+'%';b.style.width=(pct(end)-pct(start))+'%';b.innerHTML=`<span>${name}</span><span class="star">★</span>`;b.addEventListener('click',()=>{let f=getFavs(),id=favId(a),i=f.indexOf(id),added=i<0;if(added)f.push(id);else f.splice(i,1);setFavs(f);renderActs();toast((added?'⭐ Favoriet: ':'☆ Verwijderd: ')+name)});track.appendChild(b)})}
+function currentHour(){const n=new Date();let h=n.getHours()+n.getMinutes()/60+n.getSeconds()/3600;if(n.getHours()<3)h+=24;return h}
+function updateNowLine(){const h=currentHour(),c=Math.max(START,Math.min(END,h)),tl=document.getElementById('timeline'),left=tl.offsetLeft+(c-START)/(END-START)*tl.clientWidth;document.getElementById('nowLine').style.left=left+'px';document.getElementById('nowBubble').style.left=left+'px';document.getElementById('nowBubble').textContent=new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}
+function showFavs(){const p=document.getElementById('favPanel'),f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');p.style.display='block';document.getElementById('nowPanel').style.display='none'}
+function showNow(){const p=document.getElementById('nowPanel'),h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');p.style.display='block';document.getElementById('favPanel').style.display='none'}
+function icon(c){if([0,1].includes(c))return'☀️';if(c===2)return'🌤️';if([3,45,48].includes(c))return'☁️';if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧️';if([95,96,99].includes(c))return'⛈️';return'🌥️'}
+async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-15&end_date=2026-08-16';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-15':'2026-08-16',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class="wcell"><div class="wtime">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Zaterdag 15 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
+async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
+buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
+</script>
+</body></html>
