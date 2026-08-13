@@ -44,11 +44,17 @@ html,body{width:100%;height:100%;overflow:hidden}
 #zoomViewport{
   position:fixed;
   left:0; right:0;
-  top:64px; bottom:0;
+  top:0; bottom:0;
   overflow:hidden;
   background:#111;
   touch-action:none;
 }
+@media (min-width:1000px){
+  html,body{overflow:auto !important;height:auto !important}
+  #zoomViewport{position:relative !important;top:auto !important;bottom:auto !important;overflow:visible !important;touch-action:auto !important;background:#111}
+  #sheet{position:relative !important;transform:none !important;left:auto !important;top:auto !important;margin:0 auto}
+}
+
 #sheet{
   position:absolute !important;
   left:0; top:0;
@@ -65,7 +71,7 @@ html,body{width:100%;height:100%;overflow:hidden}
 </style>
 </head>
 <body>
-<div class="topbar">
+<div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button><button class="dark" onclick="location.href='zondag-native.html'">← Vorige</button>
 <button class="primary" onclick="showNow()">🔴 NU / STRAKS</button>
 <button class="primary" onclick="showFavs()">⭐ Favorieten</button><button class="dark" onclick="location.href='dinsdag-native.html'">Volgende →</button>
@@ -126,37 +132,54 @@ function zDistance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 function zMid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
 
 function zClamp(){
+  if (window.innerWidth >= 1000) return;
+
   const vw = zoomViewport.clientWidth, vh = zoomViewport.clientHeight;
   const sw = zoomSheet.offsetWidth * zScale;
   const sh = zoomSheet.offsetHeight * zScale;
+
   if(sw <= vw) zX = (vw-sw)/2;
   else zX = Math.min(0, Math.max(vw-sw, zX));
-  if(sh <= vh) zY = 0;
-  else zY = Math.min(0, Math.max(vh-sh, zY));
+
+  if(sh <= vh) {
+    zY = 0;
+  } else {
+    zY = Math.min(0, Math.max(vh-sh, zY));
+  }
 }
 function zApply(){
   zClamp();
   zoomSheet.style.transform = `translate(${zX}px,${zY}px) scale(${zScale})`;
 }
 function fitOverview(){
+  const desktop = window.innerWidth >= 1000;
+  const topbar = document.getElementById('topbar');
+
+  if (desktop) {
+    // PC: geen custom transformatie. Daardoor blijven optredenblokken normale klikbare HTML.
+    zoomViewport.style.top = 'auto';
+    zoomSheet.style.transform = 'none';
+    zScale = 1;
+    zMin = 1;
+    zX = 0;
+    zY = 0;
+    return;
+  }
+
+  // Mobiel: viewport exact onder de volledige (eventueel afgebroken) knoppenbalk.
+  const tb = topbar ? topbar.offsetHeight : 0;
+  zoomViewport.style.top = tb + 'px';
+
   const vw = zoomViewport.clientWidth;
   const vh = zoomViewport.clientHeight;
   const sw = zoomSheet.offsetWidth;
   const sh = zoomSheet.offsetHeight;
 
-  if (vw >= 1000) {
-    // PC / grote tablet: toon op natuurlijke grootte, gecentreerd.
-    zMin = Math.min(1, vw / sw);
-    zScale = zMin;
-    zX = Math.max(0, (vw - sw * zScale) / 2);
-    zY = 0;
-  } else {
-    // Mobiel: volledig overzicht bij openen.
-    zMin = Math.min(vw / sw, vh / sh);
-    zScale = zMin;
-    zX = (vw - sw * zScale) / 2;
-    zY = 0;
-  }
+  // Toon bij openen het volledige schema inclusief de dagtitel.
+  zMin = Math.min(vw / sw, vh / sh);
+  zScale = zMin;
+  zX = (vw - sw * zScale) / 2;
+  zY = 0;
   zApply();
 }
 function zoomAt(clientX, clientY, newScale){
@@ -170,6 +193,8 @@ function zoomAt(clientX, clientY, newScale){
 }
 
 zoomViewport.addEventListener('pointerdown', e=>{
+  if (window.innerWidth >= 1000) return;
+  if (e.target.closest && e.target.closest('.act')) return;
   zoomViewport.setPointerCapture(e.pointerId);
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   zMoved = false;
@@ -182,6 +207,7 @@ zoomViewport.addEventListener('pointerdown', e=>{
   }
 });
 zoomViewport.addEventListener('pointermove', e=>{
+  if (window.innerWidth >= 1000) return;
   if(!zPointers.has(e.pointerId)) return;
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(zPointers.size===1){
@@ -202,6 +228,7 @@ zoomViewport.addEventListener('pointermove', e=>{
   }
 });
 function zEnd(e){
+  if (window.innerWidth >= 1000) return;
   zPointers.delete(e.pointerId);
   if(zPointers.size===1){
     const p=[...zPointers.values()][0];
@@ -212,11 +239,12 @@ zoomViewport.addEventListener('pointerup',zEnd);
 zoomViewport.addEventListener('pointercancel',zEnd);
 
 zoomViewport.addEventListener('dblclick', e=>{
+  if (window.innerWidth >= 1000) return;
   if(zScale > zMin*1.15) fitOverview();
   else zoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
 });
 
-window.addEventListener('resize',fitOverview);
+window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
 setTimeout(fitOverview,100);
 
 </script>
