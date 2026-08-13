@@ -90,7 +90,7 @@ html,body{
 
 #actOverlay{position:absolute;left:0;top:0;width:1650px;height:928px;z-index:7;pointer-events:none}
 .actHotspot{
-  position:absolute;box-sizing:border-box;pointer-events:none;
+  position:absolute;box-sizing:border-box;pointer-events:auto;touch-action:manipulation;
   border:3px solid transparent;border-radius:4px;background:rgba(255,255,255,0.001);
 }
 .actHotspot.fav{
@@ -188,6 +188,7 @@ function updateTimeBar(){
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
 viewport.addEventListener('pointerdown',e=>{
+  if(e.target.closest && e.target.closest('.actHotspot')) return;
   viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   const now=Date.now();
   if(now-lastTap<300&&pointers.size===1){fitToScreen();lastTap=0;return;}
@@ -393,23 +394,26 @@ function drawActHotspots(){
     el.style.height=a.h+'px';
     el.title='Tik om favoriet te maken: '+a.name;
     el.innerHTML='<span class="badge">★</span>';
-    let downX=0,downY=0;
-    el.addEventListener('pointerdown',ev=>{downX=ev.clientX;downY=ev.clientY;});
-    el.addEventListener('pointerup',ev=>{
-      if(Math.hypot(ev.clientX-downX,ev.clientY-downY)>10) return;
+    let downX=0, downY=0;
+    el.addEventListener('pointerdown', ev=>{
       ev.stopPropagation();
+      downX=ev.clientX; downY=ev.clientY;
+    });
+    el.addEventListener('pointerup', ev=>{
+      ev.stopPropagation();
+      if(Math.hypot(ev.clientX-downX, ev.clientY-downY)>12) return;
       const id=favIdFor(a);
       let f=getFavs();
       const i=f.indexOf(id);
-      let added=false;
-      if(i>=0) f.splice(i,1); else {f.push(id);added=true;}
+      const added=i<0;
+      if(added) f.push(id); else f.splice(i,1);
       setFavs(f);
       drawActHotspots();
       const t=document.getElementById('tapToast');
       t.textContent=(added?'⭐ Favoriet: ':'☆ Verwijderd: ')+a.name;
       t.style.display='block';
       clearTimeout(window.__toastTimer);
-      window.__toastTimer=setTimeout(()=>t.style.display='none',1600);
+      window.__toastTimer=setTimeout(()=>t.style.display='none',1700);
     });
     host.appendChild(el);
   });
@@ -419,58 +423,7 @@ const oldToggleFav=toggleFav;
 toggleFav=function(id){oldToggleFav(id);drawActHotspots();}
 
 
-// Betrouwbare favorieten-tap: bepaal welk programmablok onder de vinger ligt
-// op basis van de coördinaten in het originele blokkenschema.
-let favTapStart = null;
 
-viewport.addEventListener('pointerdown', e => {
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  favTapStart = {x:e.clientX, y:e.clientY, id:e.pointerId};
-}, true);
-
-viewport.addEventListener('pointerup', e => {
-  if (!favTapStart || favTapStart.id !== e.pointerId) return;
-
-  const moved = Math.hypot(e.clientX - favTapStart.x, e.clientY - favTapStart.y);
-  favTapStart = null;
-  if (moved > 12) return; // dit was slepen, geen tik
-
-  // Zet schermcoördinaten om naar coördinaten van de originele afbeelding.
-  const ix = (e.clientX - x) / scale;
-  const iy = (e.clientY - y) / scale;
-
-  // Alleen tikken binnen het eigenlijke blokkenschema.
-  if (ix < X_START || ix > X_END || iy < 110 || iy > 820) return;
-
-  const tapped = TAP_ACTS.find(a => {
-    const left = xForDecimal(a.start);
-    const right = xForDecimal(Math.min(a.end, 26));
-    return ix >= left && ix <= right && iy >= a.y && iy <= (a.y + a.h);
-  });
-
-  if (!tapped) return;
-
-  const id = favIdFor(tapped);
-  let favs = getFavs();
-  const pos = favs.indexOf(id);
-  let added = false;
-
-  if (pos >= 0) {
-    favs.splice(pos, 1);
-  } else {
-    favs.push(id);
-    added = true;
-  }
-
-  setFavs(favs);
-  drawActHotspots();
-
-  const toast = document.getElementById('tapToast');
-  toast.textContent = (added ? '⭐ Favoriet: ' : '☆ Verwijderd: ') + tapped.name;
-  toast.style.display = 'block';
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => toast.style.display = 'none', 1700);
-}, true);
 
 </script>
 </body>
