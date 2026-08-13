@@ -113,10 +113,8 @@ function fitToScreen(){
 }
 function eventDecimalHour(){
   const now=new Date();
-  const y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,"0"),d=String(now.getDate()).padStart(2,"0");
-  const today=`${y}-${m}-${d}`;
   let h=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600;
-  if(today==="2026-08-19" && now.getHours()<3) h+=24;
+  if(now.getHours()<3) h+=24;
   return h;
 }
 function updateTimeBar(){
