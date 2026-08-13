@@ -88,23 +88,35 @@ html,body{
 }
 
 
-#actOverlay{position:absolute;left:0;top:0;width:1650px;height:928px;z-index:7;pointer-events:none}
-.actHotspot{
-  position:absolute;box-sizing:border-box;pointer-events:auto;touch-action:manipulation;
-  border:3px solid transparent;border-radius:4px;background:rgba(255,255,255,0.001);
+#tapOverlay{
+  position:absolute;left:0;top:0;width:1650px;height:928px;z-index:12;
+  pointer-events:none;
 }
-.actHotspot.fav{
-  border-color:#ffd83d;background:rgba(255,216,61,.12);
-  box-shadow:0 0 10px 3px rgba(255,216,61,.75), inset 0 0 0 2px rgba(0,0,0,.28);
+.actTap{
+  position:absolute;pointer-events:auto;
+  border:3px solid transparent;border-radius:6px;
+  background:rgba(255,255,255,0.001);
+  padding:0;margin:0;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(255,216,61,.28);
 }
-.actHotspot .badge{
-  display:none;position:absolute;right:4px;top:3px;background:#ffd83d;color:#111;
-  border-radius:999px;padding:2px 5px;font-size:17px;line-height:1;font-weight:900;
+.actTap:active{
+  background:rgba(255,216,61,.22);
 }
-.actHotspot.fav .badge{display:block}
+.actTap.fav{
+  border-color:#ffd83d;
+  background:rgba(255,216,61,.14);
+  box-shadow:0 0 10px 3px rgba(255,216,61,.78), inset 0 0 0 2px rgba(0,0,0,.25);
+}
+.actTap .favBadge{
+  display:none;position:absolute;right:4px;top:4px;
+  background:#ffd83d;color:#111;border-radius:999px;
+  padding:3px 5px;font-size:18px;line-height:1;font-weight:900;
+}
+.actTap.fav .favBadge{display:block}
 #tapToast{
-  position:fixed;z-index:40;left:50%;bottom:24px;transform:translateX(-50%);
-  background:rgba(0,0,0,.9);color:#fff;border-radius:999px;padding:10px 16px;
+  position:fixed;z-index:60;left:50%;bottom:24px;transform:translateX(-50%);
+  background:rgba(0,0,0,.92);color:#fff;border-radius:999px;padding:10px 16px;
   font-size:14px;font-weight:800;display:none;white-space:nowrap;pointer-events:none;
 }
 
@@ -124,7 +136,7 @@ html,body{
 
 <div id="viewport">
   <div id="stage">
-    <div id="actOverlay"></div><img id="schedule" src="dinsdag.png" alt="Dinsdag Kermis blokkenschema">
+    <img id="schedule" src="dinsdag.png" alt="Dinsdag Kermis blokkenschema"><div id="tapOverlay"></div>
     <div id="timebar"></div>
     <div id="timelabel"></div>
     <section id="weatherPanel">
@@ -188,7 +200,6 @@ function updateTimeBar(){
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
 viewport.addEventListener('pointerdown',e=>{
-  if(e.target.closest && e.target.closest('.actHotspot')) return;
   viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   const now=Date.now();
   if(now-lastTap<300&&pointers.size===1){fitToScreen();lastTap=0;return;}
@@ -379,51 +390,66 @@ async function updateRainAlert(){
 updateRainAlert(); setInterval(updateRainAlert,15*60*1000);
 
 
-const TAP_ACTS = [{"venue": "Van Rooijen", "name": "Shoreline", "start": 15.5, "end": 19.5, "y": 226, "h": 141}, {"venue": "Van Rooijen", "name": "Clemens & Clemens", "start": 20, "end": 25, "y": 226, "h": 141}, {"venue": "Het Café", "name": "Dou Grend Ünd Von Velsen en de Nozem", "start": 17.5, "end": 21, "y": 405, "h": 140}, {"venue": "Het Café", "name": "The Glitter Club", "start": 21, "end": 26, "y": 405, "h": 140}, {"venue": "Quicksilver binnen", "name": "DJ Tino", "start": 19, "end": 26.5, "y": 582, "h": 70}, {"venue": "Quicksilver buiten", "name": "DJ Jos", "start": 16, "end": 17.5, "y": 652, "h": 70}, {"venue": "Quicksilver buiten", "name": "Justen de Wildt", "start": 18, "end": 19.5, "y": 652, "h": 70}, {"venue": "Quicksilver buiten", "name": "Rutger van Barneveld", "start": 19.5, "end": 25.5, "y": 652, "h": 70}, {"venue": "'t Fortuin straat", "name": "Jeroen Gmelich", "start": 16, "end": 20, "y": 759, "h": 70}, {"venue": "'t Fortuin straat", "name": "DJ Cees Weel", "start": 20.75, "end": 25.5, "y": 759, "h": 70}, {"venue": "'t Fortuin tent", "name": "Over de Dijk", "start": 16.5, "end": 19, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Zingende DJ Jacco Deen", "start": 19, "end": 20.25, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Monique Smit", "start": 20.25, "end": 21, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Phoenix", "start": 21, "end": 25.5, "y": 829, "h": 71}];
-function favIdFor(a){return PAGE_DAY+'|'+a.venue+'|'+a.name+'|'+a.start;}
-function drawActHotspots(){
-  const host=document.getElementById('actOverlay');
+const DIRECT_TAP_ACTS = [{"venue": "Van Rooijen", "name": "Shoreline", "start": 15.5, "end": 19.5, "y": 226, "h": 141}, {"venue": "Van Rooijen", "name": "Clemens & Clemens", "start": 20, "end": 25, "y": 226, "h": 141}, {"venue": "Het Café", "name": "Dou Grend Ünd Von Velsen en de Nozem", "start": 17.5, "end": 21, "y": 405, "h": 140}, {"venue": "Het Café", "name": "The Glitter Club", "start": 21, "end": 26, "y": 405, "h": 140}, {"venue": "Quicksilver binnen", "name": "DJ Tino", "start": 19, "end": 26.5, "y": 582, "h": 70}, {"venue": "Quicksilver buiten", "name": "DJ Jos", "start": 16, "end": 17.5, "y": 652, "h": 70}, {"venue": "Quicksilver buiten", "name": "Justen de Wildt", "start": 18, "end": 19.5, "y": 652, "h": 70}, {"venue": "Quicksilver buiten", "name": "Rutger van Barneveld", "start": 19.5, "end": 25.5, "y": 652, "h": 70}, {"venue": "'t Fortuin straat", "name": "Jeroen Gmelich", "start": 16, "end": 20, "y": 759, "h": 70}, {"venue": "'t Fortuin straat", "name": "DJ Cees Weel", "start": 20.75, "end": 25.5, "y": 759, "h": 70}, {"venue": "'t Fortuin tent", "name": "Over de Dijk", "start": 16.5, "end": 19, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Zingende DJ Jacco Deen", "start": 19, "end": 20.25, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Monique Smit", "start": 20.25, "end": 21, "y": 829, "h": 71}, {"venue": "'t Fortuin tent", "name": "Phoenix", "start": 21, "end": 25.5, "y": 829, "h": 71}];
+
+function directFavId(a){
+  return PAGE_DAY+'|'+a.venue+'|'+a.name+'|'+a.start;
+}
+
+function showFavToast(text){
+  const t=document.getElementById('tapToast');
+  t.textContent=text;
+  t.style.display='block';
+  clearTimeout(window.__favToastTimer);
+  window.__favToastTimer=setTimeout(()=>t.style.display='none',1600);
+}
+
+function renderDirectTapOverlay(){
+  const host=document.getElementById('tapOverlay');
   const favs=getFavs();
   host.innerHTML='';
-  TAP_ACTS.forEach(a=>{
-    const el=document.createElement('div');
-    el.className='actHotspot'+(favs.includes(favIdFor(a))?' fav':'');
-    el.style.left=xForDecimal(a.start)+'px';
-    el.style.top=a.y+'px';
-    el.style.width=(xForDecimal(Math.min(a.end,26))-xForDecimal(a.start))+'px';
-    el.style.height=a.h+'px';
-    el.title='Tik om favoriet te maken: '+a.name;
-    el.innerHTML='<span class="badge">★</span>';
-    let downX=0, downY=0;
-    el.addEventListener('pointerdown', ev=>{
-      ev.stopPropagation();
-      downX=ev.clientX; downY=ev.clientY;
+
+  DIRECT_TAP_ACTS.forEach(a=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='actTap'+(favs.includes(directFavId(a))?' fav':'');
+    b.style.left=xForDecimal(a.start)+'px';
+    b.style.top=a.y+'px';
+    b.style.width=(xForDecimal(Math.min(a.end,26))-xForDecimal(a.start))+'px';
+    b.style.height=a.h+'px';
+    b.setAttribute('aria-label', a.name+' favoriet maken');
+    b.innerHTML='<span class="favBadge">★</span>';
+
+    // Belangrijk: deze echte BUTTON vangt de tik af voordat de zoomlaag dat doet.
+    ['pointerdown','touchstart','mousedown'].forEach(evName=>{
+      b.addEventListener(evName, ev=>ev.stopPropagation(), {passive:false});
     });
-    el.addEventListener('pointerup', ev=>{
+
+    b.addEventListener('click', ev=>{
+      ev.preventDefault();
       ev.stopPropagation();
-      if(Math.hypot(ev.clientX-downX, ev.clientY-downY)>12) return;
-      const id=favIdFor(a);
-      let f=getFavs();
-      const i=f.indexOf(id);
+      const id=directFavId(a);
+      let favs=getFavs();
+      const i=favs.indexOf(id);
       const added=i<0;
-      if(added) f.push(id); else f.splice(i,1);
-      setFavs(f);
-      drawActHotspots();
-      const t=document.getElementById('tapToast');
-      t.textContent=(added?'⭐ Favoriet: ':'☆ Verwijderd: ')+a.name;
-      t.style.display='block';
-      clearTimeout(window.__toastTimer);
-      window.__toastTimer=setTimeout(()=>t.style.display='none',1700);
+      if(added) favs.push(id); else favs.splice(i,1);
+      setFavs(favs);
+      renderDirectTapOverlay();
+      showFavToast((added?'⭐ Favoriet: ':'☆ Verwijderd: ')+a.name);
     });
-    host.appendChild(el);
+
+    host.appendChild(b);
   });
 }
-drawActHotspots();
-const oldToggleFav=toggleFav;
-toggleFav=function(id){oldToggleFav(id);drawActHotspots();}
 
+renderDirectTapOverlay();
 
-
+// Houd de visuele markering synchroon als favorieten via NU/STRAKS worden gewijzigd.
+const originalToggleFavDirect = toggleFav;
+toggleFav = function(id){
+  originalToggleFavDirect(id);
+  renderDirectTapOverlay();
+};
 
 </script>
 </body>
