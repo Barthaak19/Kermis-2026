@@ -66,6 +66,9 @@ footer{
   margin-top:24px;
   font-size:14px;
 }
+
+.today{outline:4px solid #fff;position:relative}
+.today:before{content:"VANDAAG";position:absolute;right:12px;top:10px;font-size:12px;background:#111;color:#fff;padding:4px 7px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -80,5 +83,18 @@ footer{
   </div>
   <footer>Wervershoof Kermis 2026</footer>
 </div>
+
+<script>
+const map={
+  "2026-08-15":"zaterdag.html",
+  "2026-08-16":"zondag.html",
+  "2026-08-17":"maandag.html",
+  "2026-08-18":"dinsdag.html"
+};
+const d=new Date(), key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+if(map[key]){
+  document.querySelectorAll('a').forEach(a=>{if(a.getAttribute('href')===map[key]) a.classList.add('today')});
+}
+</script>
 </body>
 </html>
