@@ -166,6 +166,17 @@ html,body{width:100%;height:100%;overflow:hidden}
   }
 }
 
+
+/* Zachtere, stabielere mobiele zoom */
+#sheet{
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  transform-style:preserve-3d;
+}
+#zoomViewport{
+  overscroll-behavior:none;
+}
+
 </style>
 </head>
 <body>
@@ -246,329 +257,261 @@ async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?l
 async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
 buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
 
-/* --- eigen mobiel zoom/pan systeem --- */
+
+/* --- STABIELE MOBIELE ZOOM/PAN: één gesturesysteem --- */
 const zoomViewport = document.getElementById('zoomViewport');
 const zoomSheet = document.getElementById('sheet');
 
-let zScale = 1, zMin = 1, zMax = 5, zX = 0, zY = 0;
-let zPointers = new Map();
-let zStartScale = 1, zStartDist = 0, zStartX = 0, zStartY = 0, zStartMid = {x:0,y:0};
-let zMoved = false;
+let zScale=1, zMin=1, zMax=6, zX=0, zY=0;
+const zPointers=new Map();
 
-function zDistance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
-function zMid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+let gesture=null;
+let transformFrame=0;
+let blockActClickUntil=0;
+let zoomAnimFrame=0;
 
-function zClamp(){
-  if (window.innerWidth >= 1000) return;
+function clampState(){
+  if(window.innerWidth>=1000) return;
 
-  const vw = zoomViewport.clientWidth, vh = zoomViewport.clientHeight;
-  const sw = zoomSheet.offsetWidth * zScale;
-  const sh = zoomSheet.offsetHeight * zScale;
+  const vw=zoomViewport.clientWidth;
+  const vh=zoomViewport.clientHeight;
+  const sw=zoomSheet.offsetWidth*zScale;
+  const sh=zoomSheet.offsetHeight*zScale;
 
-  if(sw <= vw) zX = (vw-sw)/2;
-  else zX = Math.min(0, Math.max(vw-sw, zX));
+  if(sw<=vw) zX=(vw-sw)/2;
+  else zX=Math.min(0,Math.max(vw-sw,zX));
 
-  if(sh <= vh) {
-    zY = 0;
-  } else {
-    zY = Math.min(0, Math.max(vh-sh, zY));
-  }
+  if(sh<=vh) zY=0;
+  else zY=Math.min(0,Math.max(vh-sh,zY));
 }
-function zApply(){
-  zClamp();
-  zoomSheet.style.transform = `translate(${zX}px,${zY}px) scale(${zScale})`;
+
+function applyTransform(){
+  if(transformFrame) return;
+  transformFrame=requestAnimationFrame(()=>{
+    transformFrame=0;
+    clampState();
+    zoomSheet.style.transform=`translate3d(${zX.toFixed(2)}px,${zY.toFixed(2)}px,0) scale(${zScale.toFixed(4)})`;
+  });
 }
+
 function fitOverview(){
-  const desktop = window.innerWidth >= 1000;
-  const topbar = document.getElementById('topbar');
+  cancelAnimationFrame(zoomAnimFrame);
+  const topbar=document.getElementById('topbar');
 
-  if (desktop) {
-    // PC: geen custom transformatie. Daardoor blijven optredenblokken normale klikbare HTML.
-    zoomViewport.style.top = 'auto';
-    zoomSheet.style.transform = 'none';
-    zScale = 1;
-    zMin = 1;
-    zX = 0;
-    zY = 0;
+  if(window.innerWidth>=1000){
+    zoomViewport.style.top='auto';
+    zoomSheet.style.transform='none';
+    zScale=zMin=1; zX=zY=0;
     return;
   }
 
-  // Mobiel: viewport exact onder de volledige (eventueel afgebroken) knoppenbalk.
-  const tb = topbar ? topbar.offsetHeight : 0;
-  zoomViewport.style.top = tb + 'px';
+  const tb=topbar ? topbar.offsetHeight : 0;
+  zoomViewport.style.top=tb+'px';
 
-  const vw = zoomViewport.clientWidth;
-  const vh = zoomViewport.clientHeight;
-  const sw = zoomSheet.offsetWidth;
-  const sh = zoomSheet.offsetHeight;
+  const vw=zoomViewport.clientWidth;
+  const vh=zoomViewport.clientHeight;
+  const sw=zoomSheet.offsetWidth;
+  const sh=zoomSheet.offsetHeight;
 
-  // Toon bij openen het volledige schema inclusief de dagtitel.
-  zMin = Math.min(vw / sw, vh / sh);
-  zScale = zMin;
-  zX = (vw - sw * zScale) / 2;
-  zY = 0;
-  zApply();
-}
-function zoomAt(clientX, clientY, newScale){
-  const old = zScale;
-  newScale = Math.max(zMin, Math.min(zMax, newScale));
-  const ix = (clientX-zX)/old, iy=(clientY-zY)/old;
-  zScale = newScale;
-  zX = clientX - ix*zScale;
-  zY = clientY - iy*zScale;
-  zApply();
+  zMin=Math.min(vw/sw,vh/sh);
+  zScale=zMin;
+  zX=(vw-sw*zScale)/2;
+  zY=0;
+  applyTransform();
 }
 
-zoomViewport.addEventListener('pointerdown', e=>{
-  if (window.innerWidth >= 1000) return;
-  if (e.target.closest && e.target.closest('.act')) return;
-  zoomViewport.setPointerCapture(e.pointerId);
+function animateZoomAt(cx,cy,targetScale){
+  if(window.innerWidth>=1000) return;
+  cancelAnimationFrame(zoomAnimFrame);
+
+  targetScale=Math.max(zMin,Math.min(zMax,targetScale));
+
+  const startScale=zScale;
+  const startX=zX, startY=zY;
+  const imageX=(cx-startX)/startScale;
+  const imageY=(cy-startY)/startScale;
+  const targetX=cx-imageX*targetScale;
+  const targetY=cy-imageY*targetScale;
+  const start=performance.now();
+  const duration=190;
+
+  function step(now){
+    const t=Math.min(1,(now-start)/duration);
+    const ease=1-Math.pow(1-t,3);
+    zScale=startScale+(targetScale-startScale)*ease;
+    zX=startX+(targetX-startX)*ease;
+    zY=startY+(targetY-startY)*ease;
+    applyTransform();
+    if(t<1) zoomAnimFrame=requestAnimationFrame(step);
+  }
+  zoomAnimFrame=requestAnimationFrame(step);
+}
+
+function pointerDistance(a,b){
+  return Math.hypot(a.x-b.x,a.y-b.y);
+}
+function pointerMid(a,b){
+  return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+}
+
+zoomViewport.addEventListener('pointerdown',e=>{
+  if(window.innerWidth>=1000) return;
+  if(e.pointerType==='mouse' && e.button!==0) return;
+
+  cancelAnimationFrame(zoomAnimFrame);
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  zMoved = false;
+
+  try{ zoomViewport.setPointerCapture(e.pointerId); }catch(_){}
+
   if(zPointers.size===1){
-    zStartX=zX; zStartY=zY; zStartMid={x:e.clientX,y:e.clientY};
-  } else if(zPointers.size===2){
+    gesture={
+      mode:'pan',
+      startX:e.clientX,
+      startY:e.clientY,
+      baseX:zX,
+      baseY:zY,
+      moved:false,
+      startedOnAct:!!(e.target.closest && e.target.closest('.act'))
+    };
+  }else if(zPointers.size===2){
     const p=[...zPointers.values()];
-    zStartDist=zDistance(p[0],p[1]); zStartScale=zScale;
-    zStartX=zX; zStartY=zY; zStartMid=zMid(p[0],p[1]);
+    const mid=pointerMid(p[0],p[1]);
+    gesture={
+      mode:'pinch',
+      startDist:Math.max(1,pointerDistance(p[0],p[1])),
+      startScale:zScale,
+      imageX:(mid.x-zX)/zScale,
+      imageY:(mid.y-zY)/zScale,
+      moved:true
+    };
   }
 });
-zoomViewport.addEventListener('pointermove', e=>{
-  if (window.innerWidth >= 1000) return;
-  if(!zPointers.has(e.pointerId)) return;
+
+zoomViewport.addEventListener('pointermove',e=>{
+  if(window.innerWidth>=1000 || !zPointers.has(e.pointerId)) return;
+
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(zPointers.size===1){
-    const p=[...zPointers.values()][0];
-    const dx=p.x-zStartMid.x, dy=p.y-zStartMid.y;
-    if(Math.hypot(dx,dy)>6) zMoved=true;
-    if(zScale > zMin+0.001){
-      zX=zStartX+dx; zY=zStartY+dy; zApply();
+
+  if(zPointers.size===2){
+    e.preventDefault();
+    const p=[...zPointers.values()];
+    const mid=pointerMid(p[0],p[1]);
+    const dist=Math.max(1,pointerDistance(p[0],p[1]));
+
+    if(!gesture || gesture.mode!=='pinch'){
+      gesture={
+        mode:'pinch',
+        startDist:dist,
+        startScale:zScale,
+        imageX:(mid.x-zX)/zScale,
+        imageY:(mid.y-zY)/zScale,
+        moved:true
+      };
+      return;
     }
-  } else if(zPointers.size===2){
-    zMoved=true;
-    const p=[...zPointers.values()], md=zMid(p[0],p[1]), d=zDistance(p[0],p[1]);
-    const newScale=Math.max(zMin,Math.min(zMax,zStartScale*(d/zStartDist)));
-    const ix=(zStartMid.x-zStartX)/zStartScale, iy=(zStartMid.y-zStartY)/zStartScale;
-    zScale=newScale;
-    zX=md.x-ix*zScale; zY=md.y-iy*zScale;
-    zApply();
+
+    // Kleine demping voorkomt nerveuze schaalwisselingen door touch-jitter.
+    const rawScale=Math.max(zMin,Math.min(zMax,gesture.startScale*(dist/gesture.startDist)));
+    const nextScale=zScale+(rawScale-zScale)*0.55;
+
+    zScale=nextScale;
+    zX=mid.x-gesture.imageX*zScale;
+    zY=mid.y-gesture.imageY*zScale;
+    applyTransform();
+    return;
   }
-});
-function zEnd(e){
-  if (window.innerWidth >= 1000) return;
+
+  if(zPointers.size===1 && gesture && gesture.mode==='pan'){
+    const p=[...zPointers.values()][0];
+    const dx=p.x-gesture.startX;
+    const dy=p.y-gesture.startY;
+
+    if(Math.hypot(dx,dy)>7) gesture.moved=true;
+
+    if(gesture.moved && zScale>zMin+0.001){
+      e.preventDefault();
+      zX=gesture.baseX+dx;
+      zY=gesture.baseY+dy;
+      applyTransform();
+    }
+  }
+},{passive:false});
+
+function endPointer(e){
+  if(window.innerWidth>=1000) return;
+
+  const wasMoved=!!(gesture && gesture.moved);
+  const startedOnAct=!!(gesture && gesture.startedOnAct);
+
   zPointers.delete(e.pointerId);
+  try{ zoomViewport.releasePointerCapture(e.pointerId); }catch(_){}
+
+  if(wasMoved && startedOnAct){
+    blockActClickUntil=Date.now()+650;
+  }
+
   if(zPointers.size===1){
     const p=[...zPointers.values()][0];
-    zStartX=zX; zStartY=zY; zStartMid={x:p.x,y:p.y};
+    gesture={
+      mode:'pan',
+      startX:p.x,
+      startY:p.y,
+      baseX:zX,
+      baseY:zY,
+      moved:false,
+      startedOnAct:false
+    };
+  }else if(zPointers.size===0){
+    gesture=null;
   }
 }
-zoomViewport.addEventListener('pointerup',zEnd);
-zoomViewport.addEventListener('pointercancel',zEnd);
+zoomViewport.addEventListener('pointerup',endPointer);
+zoomViewport.addEventListener('pointercancel',endPointer);
 
-zoomViewport.addEventListener('dblclick', e=>{
-  if (window.innerWidth >= 1000) return;
-  if(zScale > zMin*1.15) fitOverview();
-  else zoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
+document.addEventListener('click',e=>{
+  if(Date.now()<blockActClickUntil){
+    const act=e.target.closest && e.target.closest('.act');
+    if(act){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }
+},true);
+
+zoomViewport.addEventListener('dblclick',e=>{
+  if(window.innerWidth>=1000) return;
+  if(zScale>zMin*1.15) fitOverview();
+  else animateZoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
 });
-
-window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
-setTimeout(fitOverview,100);
-
 
 function toggleFavPanel(){
   const p=document.getElementById('favPanel');
-  const open = p.style.display==='block' || getComputedStyle(p).display==='block';
-  if(open){
-    p.style.display='none';
-    return;
-  }
+  const open=p.style.display==='block' || getComputedStyle(p).display==='block';
+  if(open){ p.style.display='none'; return; }
   showFavs();
 }
 function toggleNowPanel(){
   const p=document.getElementById('nowPanel');
-  const open = p.style.display==='block' || getComputedStyle(p).display==='block';
-  if(open){
-    p.style.display='none';
-    return;
-  }
+  const open=p.style.display==='block' || getComputedStyle(p).display==='block';
+  if(open){ p.style.display='none'; return; }
   showNow();
 }
 
 function mobileZoomIn(){
   if(window.innerWidth>=1000) return;
-  const cx=zoomViewport.clientWidth/2;
-  const cy=zoomViewport.clientHeight/2;
-  zoomAt(cx,cy,Math.min(zScale*1.35,zMax));
+  animateZoomAt(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,Math.min(zScale*1.32,zMax));
 }
 function mobileZoomOut(){
   if(window.innerWidth>=1000) return;
-  const cx=zoomViewport.clientWidth/2;
-  const cy=zoomViewport.clientHeight/2;
-  zoomAt(cx,cy,Math.max(zScale/1.35,zMin));
+  animateZoomAt(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,Math.max(zScale/1.32,zMin));
 }
 function mobileZoomReset(){
   if(window.innerWidth>=1000) return;
   fitOverview();
 }
 
-
-/* Eén-vinger slepen: actief zodra je verder dan het overzicht bent ingezoomd. */
-let __oneFingerPanStart = null;
-
-zoomViewport.addEventListener('touchstart', e=>{
-  if(window.innerWidth>=1000) return;
-  if(e.target.closest && (e.target.closest('button') || e.target.closest('.topbar') || e.target.closest('.act'))) return;
-
-  if(e.touches.length===1 && zScale > zMin + 0.001){
-    const t=e.touches[0];
-    __oneFingerPanStart={x:t.clientX,y:t.clientY,zx:zX,zy:zY};
-  }
-},{passive:false});
-
-zoomViewport.addEventListener('touchmove', e=>{
-  if(window.innerWidth>=1000 || !__oneFingerPanStart || e.touches.length!==1) return;
-  e.preventDefault();
-  const t=e.touches[0];
-  zX=__oneFingerPanStart.zx + (t.clientX-__oneFingerPanStart.x);
-  zY=__oneFingerPanStart.zy + (t.clientY-__oneFingerPanStart.y);
-  zApply();
-},{passive:false});
-
-zoomViewport.addEventListener('touchend', e=>{
-  if(e.touches.length===0) __oneFingerPanStart=null;
-},{passive:true});
-
-
-/* Slepen mag nu ook beginnen bovenop een optreden.
-   Korte tik = favoriet, beweging = slepen. */
-let __actDrag = null;
-let __suppressActClickUntil = 0;
-
-document.addEventListener('touchstart', e=>{
-  if(window.innerWidth>=1000) return;
-  const act=e.target.closest && e.target.closest('.act');
-  if(!act || e.touches.length!==1 || zScale <= zMin + 0.001) return;
-
-  const t=e.touches[0];
-  __actDrag={
-    x:t.clientX, y:t.clientY,
-    zx:zX, zy:zY,
-    moved:false
-  };
-},{passive:true});
-
-document.addEventListener('touchmove', e=>{
-  if(window.innerWidth>=1000 || !__actDrag || e.touches.length!==1) return;
-
-  const t=e.touches[0];
-  const dx=t.clientX-__actDrag.x;
-  const dy=t.clientY-__actDrag.y;
-
-  if(Math.hypot(dx,dy)>7){
-    __actDrag.moved=true;
-    e.preventDefault();
-    zX=__actDrag.zx+dx;
-    zY=__actDrag.zy+dy;
-    zApply();
-  }
-},{passive:false});
-
-document.addEventListener('touchend', e=>{
-  if(!__actDrag) return;
-  if(__actDrag.moved){
-    __suppressActClickUntil=Date.now()+500;
-  }
-  __actDrag=null;
-},{passive:true});
-
-/* Als er net gesleept is, mag de daaropvolgende synthetische click
-   niet per ongeluk de artiest als favoriet aan/uit zetten. */
-document.addEventListener('click', e=>{
-  if(Date.now() < __suppressActClickUntil){
-    const act=e.target.closest && e.target.closest('.act');
-    if(act){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
-  }
-}, true);
-
-
-/* Robuuste drag-over-acts via Pointer Events.
-   Korte tik blijft favoriet; beweging wordt slepen. */
-let __actPointerDrag = null;
-let __blockActClickUntil = 0;
-
-document.addEventListener('pointerdown', e=>{
-  if(window.innerWidth>=1000) return;
-  const act=e.target.closest && e.target.closest('.act');
-  if(!act) return;
-
-  // Alleen éénvinger/pointer-slepen als we ingezoomd zijn.
-  if(zScale <= zMin + 0.001) return;
-
-  __actPointerDrag = {
-    id:e.pointerId,
-    x:e.clientX,
-    y:e.clientY,
-    zx:zX,
-    zy:zY,
-    moved:false,
-    act
-  };
-
-  try{ act.setPointerCapture(e.pointerId); }catch(_){}
-
-  // Voorkom dat de gewone zoomViewport-pan deze pointer tegelijk behandelt.
-  e.stopPropagation();
-}, true);
-
-document.addEventListener('pointermove', e=>{
-  if(!__actPointerDrag || e.pointerId!==__actPointerDrag.id) return;
-
-  const dx=e.clientX-__actPointerDrag.x;
-  const dy=e.clientY-__actPointerDrag.y;
-
-  if(Math.hypot(dx,dy)>6){
-    __actPointerDrag.moved=true;
-    e.preventDefault();
-    e.stopPropagation();
-
-    zX=__actPointerDrag.zx+dx;
-    zY=__actPointerDrag.zy+dy;
-    zApply();
-  }
-}, {capture:true, passive:false});
-
-document.addEventListener('pointerup', e=>{
-  if(!__actPointerDrag || e.pointerId!==__actPointerDrag.id) return;
-
-  if(__actPointerDrag.moved){
-    __blockActClickUntil=Date.now()+700;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  try{ __actPointerDrag.act.releasePointerCapture(e.pointerId); }catch(_){}
-  __actPointerDrag=null;
-}, true);
-
-document.addEventListener('pointercancel', e=>{
-  if(__actPointerDrag && e.pointerId===__actPointerDrag.id){
-    __actPointerDrag=null;
-  }
-}, true);
-
-/* Na een echte sleep mag de browser geen synthetische click als favoriet uitvoeren. */
-document.addEventListener('click', e=>{
-  if(Date.now() < __blockActClickUntil){
-    const act=e.target.closest && e.target.closest('.act');
-    if(act){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
-  }
-}, true);
+window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
+setTimeout(fitOverview,100);
 
 </script>
 </body></html>
