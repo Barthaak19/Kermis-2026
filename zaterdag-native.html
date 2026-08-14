@@ -81,8 +81,7 @@ html,body{width:100%;height:100%;overflow:hidden}
 <div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button>
 <button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
-<button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button><button class="dark mobileZoomBtn" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button><button class="dark mobileZoomBtn" onclick="mobileZoomReset()" aria-label="Overzicht">⤢</button><button class="dark mobileZoomBtn" onclick="mobileZoomIn()" aria-label="Inzoomen">＋</button>
-<button class="dark" onclick="location.href='zondag-native.html'">Volgende →</button>
+<button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button><button class="dark mobileZoomBtn" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button><button class="dark mobileZoomBtn" onclick="mobileZoomReset()" aria-label="Overzicht">⤢</button><button class="dark mobileZoomBtn" onclick="mobileZoomIn()" aria-label="Inzoomen">＋</button><button class="dark" onclick="location.href='zondag-native.html'">Volgende →</button>
 </div>
 <div id="zoomViewport"><div id="wrap"><div id="sheet">
 <div class="title">ZATERDAG KERMIS</div>
@@ -291,6 +290,33 @@ function mobileZoomReset(){
   if(window.innerWidth>=1000) return;
   fitOverview();
 }
+
+
+/* Eén-vinger slepen: actief zodra je verder dan het overzicht bent ingezoomd. */
+let __oneFingerPanStart = null;
+
+zoomViewport.addEventListener('touchstart', e=>{
+  if(window.innerWidth>=1000) return;
+  if(e.target.closest && (e.target.closest('button') || e.target.closest('.topbar') || e.target.closest('.act'))) return;
+
+  if(e.touches.length===1 && zScale > zMin + 0.001){
+    const t=e.touches[0];
+    __oneFingerPanStart={x:t.clientX,y:t.clientY,zx:zX,zy:zY};
+  }
+},{passive:false});
+
+zoomViewport.addEventListener('touchmove', e=>{
+  if(window.innerWidth>=1000 || !__oneFingerPanStart || e.touches.length!==1) return;
+  e.preventDefault();
+  const t=e.touches[0];
+  zX=__oneFingerPanStart.zx + (t.clientX-__oneFingerPanStart.x);
+  zY=__oneFingerPanStart.zy + (t.clientY-__oneFingerPanStart.y);
+  zApply();
+},{passive:false});
+
+zoomViewport.addEventListener('touchend', e=>{
+  if(e.touches.length===0) __oneFingerPanStart=null;
+},{passive:true});
 
 </script>
 </body></html>
