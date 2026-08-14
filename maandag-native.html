@@ -75,6 +75,32 @@ html,body{width:100%;height:100%;overflow:hidden}
   .mobileZoomBtn{display:none}
 }
 
+
+/* Betrouwbare mobiele zoomknoppen voor zondag/maandag/dinsdag */
+#mobileZoomDock{
+  position:fixed;
+  z-index:120;
+  right:12px;
+  bottom:18px;
+  display:flex;
+  gap:8px;
+}
+#mobileZoomDock button{
+  width:46px;
+  height:46px;
+  border:0;
+  border-radius:50%;
+  background:rgba(15,15,15,.92);
+  color:#fff;
+  font-size:25px;
+  font-weight:900;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+  touch-action:manipulation;
+}
+@media (min-width:1000px){
+  #mobileZoomDock{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -108,6 +134,13 @@ html,body{width:100%;height:100%;overflow:hidden}
 </div>
 <div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
 </div></div></div>
+
+<div id="mobileZoomDock">
+  <button type="button" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button>
+  <button type="button" onclick="mobileZoomReset()" aria-label="Volledig overzicht">⤢</button>
+  <button type="button" onclick="mobileZoomIn()" aria-label="Inzoomen">＋</button>
+</div>
+
 <div id="favPanel" class="pop"></div><div id="nowPanel" class="pop"></div><div id="toast"></div><div id="rainAlert"></div>
 <script>
 const START=14,END=26,HOURS=12,ACTS=[["Van Rooijen", "", "THE CATS AGLOW", 16, 19.5], ["Van Rooijen", "", "BIG JIMMY", 20, 25.5], ["Het Café", "", "B-STOCK 60'S", 17, 20.5], ["Het Café", "", "ACTING THE MAGGOT", 21, 26], ["Quicksilver", "BINNEN", "DJ TINO", 21, 26], ["Quicksilver", "BUITEN", "HISTORY REPEATS", 16, 19.5], ["Quicksilver", "BUITEN", "DE ESCALATIEPLOEG", 20, 22], ["Quicksilver", "BUITEN", "FONS VEURINK", 22.5, 25], ["'t Fortuin", "STRAAT", "JOHNNY CONTANT", 16, 18.5], ["'t Fortuin", "STRAAT", "DJ CEES WEEL", 19, 20], ["'t Fortuin", "STRAAT", "ZINGENDE DJ JACCO DEEN", 20, 22.5], ["'t Fortuin", "STRAAT", "EMANUEL DE ARTIEST", 22.5, 25.5], ["'t Fortuin", "TENT", "SVEN DE PIANOMAN", 16, 19], ["'t Fortuin", "TENT", "JEFFREY PARMENTIER", 20.5, 21], ["'t Fortuin", "TENT", "PHOENIX", 21.5, 25.5]],PAGE='maandag';
@@ -132,7 +165,7 @@ buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(u
 const zoomViewport = document.getElementById('zoomViewport');
 const zoomSheet = document.getElementById('sheet');
 
-let zScale = 1, zMin = 1, zMax = 5, zX = 0, zY = 0;
+let zScale = 1, zMin = 1, zMax = 6, zX = 0, zY = 0;
 let zPointers = new Map();
 let zStartScale = 1, zStartDist = 0, zStartX = 0, zStartY = 0, zStartMid = {x:0,y:0};
 let zMoved = false;
@@ -203,6 +236,7 @@ function zoomAt(clientX, clientY, newScale){
 
 zoomViewport.addEventListener('pointerdown', e=>{
   if (window.innerWidth >= 1000) return;
+  if(e.target.closest && (e.target.closest('button') || e.target.closest('.topbar'))) return;
   if (e.target.closest && e.target.closest('.act')) return;
   zoomViewport.setPointerCapture(e.pointerId);
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -292,6 +326,36 @@ function mobileZoomReset(){
   if(window.innerWidth>=1000) return;
   fitOverview();
 }
+
+
+let __touchStartDist=0, __touchStartScale=1, __touchMid={x:0,y:0};
+zoomViewport.addEventListener('touchstart', e=>{
+  if(window.innerWidth>=1000) return;
+  if(e.touches.length===2){
+    e.preventDefault();
+    const a=e.touches[0], b=e.touches[1];
+    __touchStartDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    __touchStartScale=zScale;
+    __touchMid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+  }
+},{passive:false});
+zoomViewport.addEventListener('touchmove', e=>{
+  if(window.innerWidth>=1000 || e.touches.length!==2 || !__touchStartDist) return;
+  e.preventDefault();
+  const a=e.touches[0], b=e.touches[1];
+  const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  const mid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+  const newScale=Math.max(zMin,Math.min(zMax,__touchStartScale*(d/__touchStartDist)));
+  const ix=(__touchMid.x-zX)/__touchStartScale;
+  const iy=(__touchMid.y-zY)/__touchStartScale;
+  zScale=newScale;
+  zX=mid.x-ix*zScale;
+  zY=mid.y-iy*zScale;
+  zApply();
+},{passive:false});
+zoomViewport.addEventListener('touchend', e=>{
+  if(e.touches.length<2) __touchStartDist=0;
+},{passive:true});
 
 </script>
 </body></html>
