@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1200,user-scalable=yes,maximum-scale=5,minimum-scale=0.25,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>Zondag Kermis Wervershoof 2026</title>
 <style>
 :root{--start:14;--end:26;--hours:12;--labelw:190px;--subw:88px}
@@ -10,7 +10,7 @@
 html,body{margin:0;background:#111;color:#111;font-family:Arial,Helvetica,sans-serif}
 body{min-height:100vh}
 .topbar{position:sticky;top:0;z-index:70;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:rgba(10,10,10,.96);color:white;border-bottom:1px solid #333}
-.topbar button{border:0;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer;touch-action:auto}
+.topbar button{border:0;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer;touch-action:manipulation}
 .topbar .primary{background:#ffd83d;color:#111} .topbar .dark{background:#2b2b2b;color:white}
 #wrap{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch}
 #sheet{position:relative;min-width:1200px;background:white;padding-bottom:20px}
@@ -25,28 +25,65 @@ body{min-height:100vh}
 .sub{display:flex;align-items:center;justify-content:center;font-style:italic;font-weight:900;font-size:18px}
 .track{position:relative;margin-right:40px;overflow:visible}
 .track.green{background:rgba(57,166,109,.28)} .track.blue{background:rgba(85,112,238,.27)} .track.purple{background:rgba(129,72,244,.26)} .track.red{background:rgba(244,67,54,.28)}
-.act{position:absolute;top:0;bottom:0;border:4px solid #111;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-weight:900;font-size:18px;cursor:pointer;z-index:10;user-select:none;touch-action:auto}
+.act{position:absolute;top:0;bottom:0;border:4px solid #111;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-weight:900;font-size:18px;cursor:pointer;z-index:10;user-select:none;touch-action:manipulation}
 .act:active{background:rgba(255,216,61,.28)} .act.fav{border-color:#ffd83d;background:rgba(255,216,61,.23);box-shadow:0 0 0 3px rgba(255,216,61,.25),0 0 14px rgba(255,216,61,.75)}
 .act .star{display:none;position:absolute;right:5px;top:4px;background:#ffd83d;border-radius:999px;padding:2px 5px;font-size:17px} .act.fav .star{display:block}
 #nowLine{position:absolute;top:68px;bottom:0;width:4px;background:#ff2222;z-index:30;box-shadow:0 0 10px rgba(255,0,0,.7);pointer-events:none}
 #nowBubble{position:absolute;top:44px;transform:translateX(-50%);background:#ff2222;color:white;font-weight:900;border-radius:8px;padding:5px 8px;z-index:31;pointer-events:none}
 .panel{margin:14px auto 0;width:calc(100% - 40px);background:#080808;color:white;border-radius:14px;padding:16px}
-.panel h2{margin:0 0 10px} #weatherGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;background:#333;border-radius:10px;overflow:hidden}
-.wcell{background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;min-height:150px} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
+.panel h2{margin:0 0 10px} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
+.wcell{position:absolute;top:0;bottom:0;background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;border-right:1px solid #ddd} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
 #toast{position:fixed;z-index:100;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
-.pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}.pop.open{display:block!important}
+.pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .item{padding:8px 0;border-bottom:1px solid #333}
 #rainAlert{position:fixed;z-index:85;left:10px;right:10px;bottom:72px;display:none;background:#0d2840;color:white;border-radius:12px;padding:10px 12px;font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
 @media(max-width:700px){.title{width:100%;font-size:26px}}
+
+/* Mobiele overzichts- en zoomlaag */
+html,body{width:100%;height:100%;overflow:hidden}
+#zoomViewport{
+  position:fixed;
+  left:0; right:0;
+  top:0; bottom:0;
+  overflow:hidden;
+  background:#111;
+  touch-action:none;
+}
+@media (min-width:1000px){
+  html,body{overflow:auto !important;height:auto !important}
+  #zoomViewport{position:relative !important;top:auto !important;bottom:auto !important;overflow:visible !important;touch-action:auto !important;background:#111}
+  #sheet{position:relative !important;transform:none !important;left:auto !important;top:auto !important;margin:0 auto}
+}
+
+#sheet{
+  position:absolute !important;
+  left:0; top:0;
+  width:1200px;
+  min-width:1200px !important;
+  transform-origin:0 0;
+  will-change:transform;
+}
+#wrap{
+  position:static !important;
+  overflow:visible !important;
+}
+
+
+/* Mobiele bediening */
+.mobileZoomBtn{display:inline-flex;align-items:center;justify-content:center;min-width:42px}
+@media (min-width:1000px){
+  .mobileZoomBtn{display:none}
+}
+
 </style>
 </head>
 <body>
-<div class="topbar">
+<div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button><button class="dark" onclick="location.href='zaterdag-native.html'">← Vorige</button>
-<button class="primary" onclick="showNow()">🔴 NU / STRAKS</button>
-<button class="primary" onclick="showFavs()">⭐ Favorieten</button><button class="dark" onclick="location.href='maandag-native.html'">Volgende →</button>
+<button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
+<button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button><button class="dark mobileZoomBtn" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button><button class="dark mobileZoomBtn" onclick="mobileZoomReset()" aria-label="Overzicht">⤢</button><button class="dark mobileZoomBtn" onclick="mobileZoomIn()" aria-label="Inzoomen">＋</button><button class="dark" onclick="location.href='maandag-native.html'">Volgende →</button>
 </div>
-<div id="wrap"><div id="sheet">
+<div id="zoomViewport"><div id="wrap"><div id="sheet">
 <div class="title">ZONDAG KERMIS</div>
 <div class="timeline" id="timeline"></div><div id="nowLine"></div><div id="nowBubble"></div>
 <div class="rows">
@@ -68,7 +105,7 @@ body{min-height:100vh}
 </div><div></div></div>
 </div>
 <div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
-</div></div>
+</div></div></div>
 <div id="favPanel" class="pop"></div><div id="nowPanel" class="pop"></div><div id="toast"></div><div id="rainAlert"></div>
 <script>
 const START=14,END=26,HOURS=12,ACTS=[["Van Rooijen", "", "KONING", 20, 25.5], ["Het Café", "", "EDDIE Y LOS GRASOSOS", 18, 21], ["Het Café", "", "CARPET BURNS", 21, 25.5], ["Quicksilver", "BINNEN", "DJ TINO", 21, 26], ["Quicksilver", "BUITEN", "DJ JEROEN", 18, 22], ["Quicksilver", "BUITEN", "DJ JOOPY", 22, 25], ["'t Fortuin", "STRAAT", "JEROEN GMELICH", 16, 19.5], ["'t Fortuin", "STRAAT", "DJ CEES WEEL / DJ FERRY", 19.5, 25.5], ["'t Fortuin", "TENT", "ABBA EXPERIENCE", 17, 20], ["'t Fortuin", "TENT", "JADA BORSATO", 21, 22], ["'t Fortuin", "TENT", "JURRE JARING", 22, 23], ["'t Fortuin", "TENT", "BAS VAN SAAZE", 23, 25.5]],PAGE='zondag';
@@ -82,33 +119,177 @@ function buildTimeline(){const tl=document.getElementById('timeline');for(let i=
 function renderActs(){const favs=getFavs();document.querySelectorAll('.track[data-venue]').forEach(t=>t.innerHTML='');ACTS.forEach(a=>{const[venue,sub,name,start,end]=a;const track=[...document.querySelectorAll('.track[data-venue]')].find(t=>t.dataset.venue===venue&&t.dataset.sub===sub);if(!track)return;const b=document.createElement('div');b.className='act'+(favs.includes(favId(a))?' fav':'');b.style.left=pct(start)+'%';b.style.width=(pct(end)-pct(start))+'%';b.innerHTML=`<span>${name}</span><span class="star">★</span>`;b.addEventListener('click',()=>{let f=getFavs(),id=favId(a),i=f.indexOf(id),added=i<0;if(added)f.push(id);else f.splice(i,1);setFavs(f);renderActs();toast((added?'⭐ Favoriet: ':'☆ Verwijderd: ')+name)});track.appendChild(b)})}
 function currentHour(){const n=new Date();let h=n.getHours()+n.getMinutes()/60+n.getSeconds()/3600;if(n.getHours()<3)h+=24;return h}
 function updateNowLine(){const h=currentHour(),c=Math.max(START,Math.min(END,h)),tl=document.getElementById('timeline'),left=tl.offsetLeft+(c-START)/(END-START)*tl.clientWidth;document.getElementById('nowLine').style.left=left+'px';document.getElementById('nowBubble').style.left=left+'px';document.getElementById('nowBubble').textContent=new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}
-function showFavs(){
-  const p=document.getElementById('favPanel');
-  const other=document.getElementById('nowPanel');
-  if(p.classList.contains('open')){
-    p.classList.remove('open');
-    return;
-  }
-  const f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));
-  p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');
-  other.classList.remove('open');
-  p.classList.add('open');
-}
-function showNow(){
-  const p=document.getElementById('nowPanel');
-  const other=document.getElementById('favPanel');
-  if(p.classList.contains('open')){
-    p.classList.remove('open');
-    return;
-  }
-  const h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);
-  p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');
-  other.classList.remove('open');
-  p.classList.add('open');
-}
+function showFavs(){const p=document.getElementById('favPanel'),f=getFavs(),arr=ACTS.filter(a=>f.includes(favId(a)));p.innerHTML='<h3>⭐ Favorieten</h3>'+(arr.length?arr.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]} · ${fmt(a[3])}–${fmt(a[4])}</div>`).join(''):'<div class="item">Nog geen favorieten.</div>');p.style.display='block';document.getElementById('nowPanel').style.display='none'}
+function showNow(){const p=document.getElementById('nowPanel'),h=currentHour(),now=ACTS.filter(a=>a[3]<=h&&h<a[4]),soon=ACTS.filter(a=>a[3]>h&&a[3]<=h+1).sort((a,b)=>a[3]-b[3]);p.innerHTML='<h3>🔴 NU</h3>'+(now.length?now.map(a=>`<div class="item"><b>${a[2]}</b> — ${a[0]} ${a[1]}</div>`).join(''):'<div class="item">Nu niets gepland.</div>')+'<h3>⏭ STRAKS</h3>'+(soon.length?soon.map(a=>`<div class="item"><b>${a[2]}</b> — ${fmt(a[3])}</div>`).join(''):'<div class="item">Binnen een uur niets nieuws.</div>');p.style.display='block';document.getElementById('favPanel').style.display='none'}
 function icon(c){if([0,1].includes(c))return'☀️';if(c===2)return'🌤️';if([3,45,48].includes(c))return'☁️';if([51,53,55,61,63,65,80,81,82].includes(c))return'🌧️';if([95,96,99].includes(c))return'⛈️';return'🌥️'}
-async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-16&end_date=2026-08-17';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-16':'2026-08-17',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class="wcell"><div class="wtime">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Zondag 16 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
+async function weather(){try{const url='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m&timezone=Europe%2FAmsterdam&start_date=2026-08-16&end_date=2026-08-17';const r=await fetch(url,{cache:'no-store'}),d=await r.json();let html='';for(let h=14;h<26;h++){const date=h<24?'2026-08-16':'2026-08-17',key=date+'T'+String(h%24).padStart(2,'0')+':00',i=d.hourly.time.indexOf(key);html+=`<div class=\"wcell\" style=\"left:${((h-14)/12)*100}%;width:${100/12}%\"><div class=\"wtime\">${fmt(h)}</div><div class="wicon">${icon(d.hourly.weather_code[i])}</div><div class="wtemp">${Math.round(d.hourly.temperature_2m[i])}°</div><div class="small">💧 ${d.hourly.precipitation[i]} mm · ${d.hourly.precipitation_probability[i]}%</div><div class="small">↗ ${Math.round(d.hourly.wind_speed_10m[i])} km/u</div><div class="small">vlaag ${Math.round(d.hourly.wind_gusts_10m[i])}</div></div>`}document.getElementById('weatherGrid').innerHTML=html;document.getElementById('weatherMeta').textContent='Zondag 16 augustus · laatst ververst '+new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){document.getElementById('weatherMeta').textContent='Live weer tijdelijk niet beschikbaar'}}
 async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?latitude=52.73&longitude=5.16&hourly=precipitation_probability,precipitation&timezone=Europe%2FAmsterdam&forecast_days=2',r=await fetch(u,{cache:'no-store'}),d=await r.json(),n=new Date();let best=null;for(let i=0;i<d.hourly.time.length;i++){const t=new Date(d.hourly.time[i]),diff=(t-n)/3600000;if(diff>=0&&diff<=3&&(d.hourly.precipitation_probability[i]>=50||d.hourly.precipitation[i]>=.2)){best={t,p:d.hourly.precipitation_probability[i],mm:d.hourly.precipitation[i]};break}}const e=document.getElementById('rainAlert');if(best){e.textContent=`🌧️ Regenkans rond ${best.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}: ${best.p}% · ${best.mm} mm`;e.style.display='block'}else e.style.display='none'}catch(e){}}
 buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
+
+/* --- eigen mobiel zoom/pan systeem --- */
+const zoomViewport = document.getElementById('zoomViewport');
+const zoomSheet = document.getElementById('sheet');
+
+let zScale = 1, zMin = 1, zMax = 5, zX = 0, zY = 0;
+let zPointers = new Map();
+let zStartScale = 1, zStartDist = 0, zStartX = 0, zStartY = 0, zStartMid = {x:0,y:0};
+let zMoved = false;
+
+function zDistance(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function zMid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+
+function zClamp(){
+  if (window.innerWidth >= 1000) return;
+
+  const vw = zoomViewport.clientWidth, vh = zoomViewport.clientHeight;
+  const sw = zoomSheet.offsetWidth * zScale;
+  const sh = zoomSheet.offsetHeight * zScale;
+
+  if(sw <= vw) zX = (vw-sw)/2;
+  else zX = Math.min(0, Math.max(vw-sw, zX));
+
+  if(sh <= vh) {
+    zY = 0;
+  } else {
+    zY = Math.min(0, Math.max(vh-sh, zY));
+  }
+}
+function zApply(){
+  zClamp();
+  zoomSheet.style.transform = `translate(${zX}px,${zY}px) scale(${zScale})`;
+}
+function fitOverview(){
+  const desktop = window.innerWidth >= 1000;
+  const topbar = document.getElementById('topbar');
+
+  if (desktop) {
+    // PC: geen custom transformatie. Daardoor blijven optredenblokken normale klikbare HTML.
+    zoomViewport.style.top = 'auto';
+    zoomSheet.style.transform = 'none';
+    zScale = 1;
+    zMin = 1;
+    zX = 0;
+    zY = 0;
+    return;
+  }
+
+  // Mobiel: viewport exact onder de volledige (eventueel afgebroken) knoppenbalk.
+  const tb = topbar ? topbar.offsetHeight : 0;
+  zoomViewport.style.top = tb + 'px';
+
+  const vw = zoomViewport.clientWidth;
+  const vh = zoomViewport.clientHeight;
+  const sw = zoomSheet.offsetWidth;
+  const sh = zoomSheet.offsetHeight;
+
+  // Toon bij openen het volledige schema inclusief de dagtitel.
+  zMin = Math.min(vw / sw, vh / sh);
+  zScale = zMin;
+  zX = (vw - sw * zScale) / 2;
+  zY = 0;
+  zApply();
+}
+function zoomAt(clientX, clientY, newScale){
+  const old = zScale;
+  newScale = Math.max(zMin, Math.min(zMax, newScale));
+  const ix = (clientX-zX)/old, iy=(clientY-zY)/old;
+  zScale = newScale;
+  zX = clientX - ix*zScale;
+  zY = clientY - iy*zScale;
+  zApply();
+}
+
+zoomViewport.addEventListener('pointerdown', e=>{
+  if (window.innerWidth >= 1000) return;
+  if (e.target.closest && e.target.closest('.act')) return;
+  zoomViewport.setPointerCapture(e.pointerId);
+  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  zMoved = false;
+  if(zPointers.size===1){
+    zStartX=zX; zStartY=zY; zStartMid={x:e.clientX,y:e.clientY};
+  } else if(zPointers.size===2){
+    const p=[...zPointers.values()];
+    zStartDist=zDistance(p[0],p[1]); zStartScale=zScale;
+    zStartX=zX; zStartY=zY; zStartMid=zMid(p[0],p[1]);
+  }
+});
+zoomViewport.addEventListener('pointermove', e=>{
+  if (window.innerWidth >= 1000) return;
+  if(!zPointers.has(e.pointerId)) return;
+  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(zPointers.size===1){
+    const p=[...zPointers.values()][0];
+    const dx=p.x-zStartMid.x, dy=p.y-zStartMid.y;
+    if(Math.hypot(dx,dy)>6) zMoved=true;
+    if(zScale > zMin+0.001){
+      zX=zStartX+dx; zY=zStartY+dy; zApply();
+    }
+  } else if(zPointers.size===2){
+    zMoved=true;
+    const p=[...zPointers.values()], md=zMid(p[0],p[1]), d=zDistance(p[0],p[1]);
+    const newScale=Math.max(zMin,Math.min(zMax,zStartScale*(d/zStartDist)));
+    const ix=(zStartMid.x-zStartX)/zStartScale, iy=(zStartMid.y-zStartY)/zStartScale;
+    zScale=newScale;
+    zX=md.x-ix*zScale; zY=md.y-iy*zScale;
+    zApply();
+  }
+});
+function zEnd(e){
+  if (window.innerWidth >= 1000) return;
+  zPointers.delete(e.pointerId);
+  if(zPointers.size===1){
+    const p=[...zPointers.values()][0];
+    zStartX=zX; zStartY=zY; zStartMid={x:p.x,y:p.y};
+  }
+}
+zoomViewport.addEventListener('pointerup',zEnd);
+zoomViewport.addEventListener('pointercancel',zEnd);
+
+zoomViewport.addEventListener('dblclick', e=>{
+  if (window.innerWidth >= 1000) return;
+  if(zScale > zMin*1.15) fitOverview();
+  else zoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
+});
+
+window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
+setTimeout(fitOverview,100);
+
+
+function toggleFavPanel(){
+  const p=document.getElementById('favPanel');
+  const open = p.style.display==='block' || getComputedStyle(p).display==='block';
+  if(open){
+    p.style.display='none';
+    return;
+  }
+  showFavs();
+}
+function toggleNowPanel(){
+  const p=document.getElementById('nowPanel');
+  const open = p.style.display==='block' || getComputedStyle(p).display==='block';
+  if(open){
+    p.style.display='none';
+    return;
+  }
+  showNow();
+}
+
+function mobileZoomIn(){
+  if(window.innerWidth>=1000) return;
+  const cx=zoomViewport.clientWidth/2;
+  const cy=zoomViewport.clientHeight/2;
+  zoomAt(cx,cy,Math.min(zScale*1.35,zMax));
+}
+function mobileZoomOut(){
+  if(window.innerWidth>=1000) return;
+  const cx=zoomViewport.clientWidth/2;
+  const cy=zoomViewport.clientHeight/2;
+  zoomAt(cx,cy,Math.max(zScale/1.35,zMin));
+}
+function mobileZoomReset(){
+  if(window.innerWidth>=1000) return;
+  fitOverview();
+}
+
 </script>
 </body></html>
