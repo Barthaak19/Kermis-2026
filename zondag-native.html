@@ -38,7 +38,7 @@ body{min-height:100vh}
 .panel{margin:14px 0 0;width:100%;background:#080808;color:white;border-radius:0;padding:16px 0 18px}
 .panel h2{margin:0 20px 10px} #weatherMeta{margin:0 20px 12px;color:#ddd} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
 .wcell{position:absolute;top:0;bottom:0;background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;border-right:1px solid #ddd} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
-#toast{position:fixed;z-index:10000;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
+
 .pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .item{padding:8px 0;border-bottom:1px solid #333}
 #rainAlert{position:fixed;z-index:85;left:10px;right:10px;bottom:72px;display:none;background:#0d2840;color:white;border-radius:12px;padding:10px 12px;font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
@@ -91,7 +91,7 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 
-#mobileZoomDock{
+#mobileZoomDock{z-index:120;
   position:fixed;z-index:120;right:12px;bottom:18px;display:flex;gap:8px;
 }
 #mobileZoomDock button{
@@ -99,7 +99,7 @@ html,body{width:100%;height:100%;overflow:hidden}
   background:rgba(15,15,15,.92);color:#fff;font-size:25px;font-weight:900;
   box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;
 }
-@media(max-width:999px){#toast{bottom:88px;max-width:calc(100vw - 24px);text-align:center}}@media(min-width:1000px){#mobileZoomDock{display:none}}
+@media(max-width:999px){}@media(min-width:1000px){#mobileZoomDock{display:none}}
 
 
 .copyright{
@@ -112,6 +112,10 @@ html,body{width:100%;height:100%;overflow:hidden}
   letter-spacing:.1px;
 }
 
+
+/* Favorietenmelding: exact dezelfde voorgrondinstelling als maandag/dinsdag */
+#toast{position:fixed;z-index:10000;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
+@media(max-width:999px){#toast{bottom:88px;max-width:calc(100vw - 24px);text-align:center}}
 </style>
 </head>
 <body>
