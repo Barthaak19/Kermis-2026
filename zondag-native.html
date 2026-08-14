@@ -190,6 +190,15 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 </style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFD83D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kermis 2026">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 </head>
 <body>
 <div class="topbar" id="topbar">
@@ -516,4 +525,13 @@ window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
 setTimeout(fitOverview,100);
 
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+
 </body></html>

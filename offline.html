@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FFD83D">
+<title>Kermis Wervershoof 2026 – offline</title>
+<style>
+html,body{margin:0;min-height:100%;background:#111;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
+.card{max-width:520px;text-align:center;background:#1c1c1c;padding:28px;border-radius:18px}
+h1{margin-top:0}.btn{display:inline-block;margin-top:14px;background:#FFD83D;color:#111;text-decoration:none;font-weight:900;padding:12px 18px;border-radius:999px}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFD83D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kermis 2026">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+</head>
+<body><div class="card"><h1>🎡 Kermis Wervershoof 2026</h1>
+<p>Je bent offline. Pagina’s die je eerder hebt geopend blijven beschikbaar. Live weer kan pas weer worden bijgewerkt zodra je internetverbinding terug is.</p>
+<a class="btn" href="./">Terug naar start</a></div>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+
+</body></html>
