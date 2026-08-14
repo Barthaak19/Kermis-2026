@@ -171,14 +171,22 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 
-/* Zachtere, stabielere mobiele zoom */
+/* Ultra-stabiele touchlaag */
+#zoomViewport, #zoomViewport *{
+  -webkit-user-select:none;
+}
+#zoomViewport{
+  touch-action:none !important;
+  overscroll-behavior:none;
+}
+.act, .act *{
+  touch-action:none !important;
+}
 #sheet{
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
-  transform-style:preserve-3d;
-}
-#zoomViewport{
-  overscroll-behavior:none;
+  transform-origin:0 0;
+  will-change:transform;
 }
 
 </style>
@@ -260,256 +268,247 @@ async function rainAlert(){try{const u='https://api.open-meteo.com/v1/forecast?l
 buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(updateNowLine,1000);setInterval(weather,10*60*1000);setInterval(rainAlert,15*60*1000);window.addEventListener('resize',updateNowLine);
 
 
-/* --- STABIELE MOBIELE ZOOM/PAN: één gesturesysteem --- */
-const zoomViewport = document.getElementById('zoomViewport');
-const zoomSheet = document.getElementById('sheet');
+/* --- ULTRA SMOOTH MOBIELE ZOOM/PAN --- */
+const zoomViewport=document.getElementById('zoomViewport');
+const zoomSheet=document.getElementById('sheet');
 
-let zScale=1, zMin=1, zMax=6, zX=0, zY=0;
-const zPointers=new Map();
+let zMin=1,zMax=6;
+let zScale=1,zX=0,zY=0;
+let targetScale=1,targetX=0,targetY=0;
 
+const activePointers=new Map();
 let gesture=null;
-let transformFrame=0;
-let blockActClickUntil=0;
-let zoomAnimFrame=0;
+let rafId=0;
+let suppressClickUntil=0;
 
-function clampState(){
-  if(window.innerWidth>=1000) return;
+function insideZoomViewport(target){
+  return target && (target===zoomViewport || zoomViewport.contains(target));
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function mid(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
 
-  const vw=zoomViewport.clientWidth;
-  const vh=zoomViewport.clientHeight;
-  const sw=zoomSheet.offsetWidth*zScale;
-  const sh=zoomSheet.offsetHeight*zScale;
+function clampTarget(){
+  if(window.innerWidth>=1000)return;
+  const vw=zoomViewport.clientWidth,vh=zoomViewport.clientHeight;
+  const sw=zoomSheet.offsetWidth*targetScale;
+  const sh=zoomSheet.offsetHeight*targetScale;
 
-  if(sw<=vw) zX=(vw-sw)/2;
-  else zX=Math.min(0,Math.max(vw-sw,zX));
+  if(sw<=vw) targetX=(vw-sw)/2;
+  else targetX=Math.min(0,Math.max(vw-sw,targetX));
 
-  if(sh<=vh) zY=0;
-  else zY=Math.min(0,Math.max(vh-sh,zY));
+  if(sh<=vh) targetY=0;
+  else targetY=Math.min(0,Math.max(vh-sh,targetY));
 }
 
-function applyTransform(){
-  if(transformFrame) return;
-  transformFrame=requestAnimationFrame(()=>{
-    transformFrame=0;
-    clampState();
+function startRenderLoop(){
+  if(rafId)return;
+  const tick=()=>{
+    rafId=0;
+
+    // zachte low-pass smoothing: snel genoeg om direct te voelen,
+    // maar traag genoeg om touch-jitter eruit te halen.
+    const k=0.34;
+    zScale += (targetScale-zScale)*k;
+    zX += (targetX-zX)*k;
+    zY += (targetY-zY)*k;
+
+    if(Math.abs(targetScale-zScale)<0.0004) zScale=targetScale;
+    if(Math.abs(targetX-zX)<0.08) zX=targetX;
+    if(Math.abs(targetY-zY)<0.08) zY=targetY;
+
     zoomSheet.style.transform=`translate3d(${zX.toFixed(2)}px,${zY.toFixed(2)}px,0) scale(${zScale.toFixed(4)})`;
-  });
+
+    if(Math.abs(targetScale-zScale)>0.0004 ||
+       Math.abs(targetX-zX)>0.08 ||
+       Math.abs(targetY-zY)>0.08){
+      rafId=requestAnimationFrame(tick);
+    }
+  };
+  rafId=requestAnimationFrame(tick);
+}
+
+function setTarget(scale,x,y){
+  targetScale=Math.max(zMin,Math.min(zMax,scale));
+  targetX=x; targetY=y;
+  clampTarget();
+  startRenderLoop();
 }
 
 function fitOverview(){
-  cancelAnimationFrame(zoomAnimFrame);
-  const topbar=document.getElementById('topbar');
+  const tb=document.getElementById('topbar');
 
   if(window.innerWidth>=1000){
     zoomViewport.style.top='auto';
     zoomSheet.style.transform='none';
-    zScale=zMin=1; zX=zY=0;
+    zMin=zScale=targetScale=1;
+    zX=zY=targetX=targetY=0;
     return;
   }
 
-  const tb=topbar ? topbar.offsetHeight : 0;
-  zoomViewport.style.top=tb+'px';
+  zoomViewport.style.top=(tb?tb.offsetHeight:0)+'px';
 
-  const vw=zoomViewport.clientWidth;
-  const vh=zoomViewport.clientHeight;
-  const sw=zoomSheet.offsetWidth;
-  const sh=zoomSheet.offsetHeight;
-
+  const vw=zoomViewport.clientWidth,vh=zoomViewport.clientHeight;
+  const sw=zoomSheet.offsetWidth,sh=zoomSheet.offsetHeight;
   zMin=Math.min(vw/sw,vh/sh);
-  zScale=zMin;
-  zX=(vw-sw*zScale)/2;
-  zY=0;
-  applyTransform();
+
+  zScale=targetScale=zMin;
+  zX=targetX=(vw-sw*zMin)/2;
+  zY=targetY=0;
+  zoomSheet.style.transform=`translate3d(${zX}px,0,0) scale(${zScale})`;
 }
 
-function animateZoomAt(cx,cy,targetScale){
-  if(window.innerWidth>=1000) return;
-  cancelAnimationFrame(zoomAnimFrame);
-
-  targetScale=Math.max(zMin,Math.min(zMax,targetScale));
-
-  const startScale=zScale;
-  const startX=zX, startY=zY;
-  const imageX=(cx-startX)/startScale;
-  const imageY=(cy-startY)/startScale;
-  const targetX=cx-imageX*targetScale;
-  const targetY=cy-imageY*targetScale;
-  const start=performance.now();
-  const duration=190;
-
-  function step(now){
-    const t=Math.min(1,(now-start)/duration);
-    const ease=1-Math.pow(1-t,3);
-    zScale=startScale+(targetScale-startScale)*ease;
-    zX=startX+(targetX-startX)*ease;
-    zY=startY+(targetY-startY)*ease;
-    applyTransform();
-    if(t<1) zoomAnimFrame=requestAnimationFrame(step);
-  }
-  zoomAnimFrame=requestAnimationFrame(step);
+function zoomAround(cx,cy,newScale){
+  newScale=Math.max(zMin,Math.min(zMax,newScale));
+  const ix=(cx-targetX)/targetScale;
+  const iy=(cy-targetY)/targetScale;
+  setTarget(newScale,cx-ix*newScale,cy-iy*newScale);
 }
 
-function pointerDistance(a,b){
-  return Math.hypot(a.x-b.x,a.y-b.y);
-}
-function pointerMid(a,b){
-  return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-}
+/* Capture-fase op document: hierdoor werkt pinch ook als beide vingers
+   rechtstreeks op optredenblokken staan. */
+document.addEventListener('pointerdown',e=>{
+  if(window.innerWidth>=1000 || !insideZoomViewport(e.target))return;
+  if(e.pointerType==='mouse' && e.button!==0)return;
 
-zoomViewport.addEventListener('pointerdown',e=>{
-  if(window.innerWidth>=1000) return;
-  if(e.pointerType==='mouse' && e.button!==0) return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
 
-  cancelAnimationFrame(zoomAnimFrame);
-  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-
-  try{ zoomViewport.setPointerCapture(e.pointerId); }catch(_){}
-
-  if(zPointers.size===1){
+  if(activePointers.size===1){
     gesture={
-      mode:'pan',
-      startX:e.clientX,
-      startY:e.clientY,
-      baseX:zX,
-      baseY:zY,
+      type:'pan',
+      sx:e.clientX, sy:e.clientY,
+      bx:targetX, by:targetY,
       moved:false,
-      startedOnAct:!!(e.target.closest && e.target.closest('.act'))
+      onAct:!!(e.target.closest && e.target.closest('.act'))
     };
-  }else if(zPointers.size===2){
-    const p=[...zPointers.values()];
-    const mid=pointerMid(p[0],p[1]);
+  }else if(activePointers.size===2){
+    const p=[...activePointers.values()];
+    const m=mid(p[0],p[1]);
     gesture={
-      mode:'pinch',
-      startDist:Math.max(1,pointerDistance(p[0],p[1])),
-      startScale:zScale,
-      imageX:(mid.x-zX)/zScale,
-      imageY:(mid.y-zY)/zScale,
+      type:'pinch',
+      startDist:Math.max(1,dist(p[0],p[1])),
+      baseScale:targetScale,
+      imageX:(m.x-targetX)/targetScale,
+      imageY:(m.y-targetY)/targetScale,
+      filteredMidX:m.x,
+      filteredMidY:m.y,
       moved:true
     };
   }
-});
+},true);
 
-zoomViewport.addEventListener('pointermove',e=>{
-  if(window.innerWidth>=1000 || !zPointers.has(e.pointerId)) return;
+document.addEventListener('pointermove',e=>{
+  if(window.innerWidth>=1000 || !activePointers.has(e.pointerId))return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
 
-  zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-
-  if(zPointers.size===2){
+  if(activePointers.size===2){
     e.preventDefault();
-    const p=[...zPointers.values()];
-    const mid=pointerMid(p[0],p[1]);
-    const dist=Math.max(1,pointerDistance(p[0],p[1]));
+    const p=[...activePointers.values()];
+    const m=mid(p[0],p[1]);
+    const d=Math.max(1,dist(p[0],p[1]));
 
-    if(!gesture || gesture.mode!=='pinch'){
+    if(!gesture || gesture.type!=='pinch'){
       gesture={
-        mode:'pinch',
-        startDist:dist,
-        startScale:zScale,
-        imageX:(mid.x-zX)/zScale,
-        imageY:(mid.y-zY)/zScale,
+        type:'pinch',
+        startDist:d,
+        baseScale:targetScale,
+        imageX:(m.x-targetX)/targetScale,
+        imageY:(m.y-targetY)/targetScale,
+        filteredMidX:m.x,
+        filteredMidY:m.y,
         moved:true
       };
       return;
     }
 
-    // Kleine demping voorkomt nerveuze schaalwisselingen door touch-jitter.
-    const rawScale=Math.max(zMin,Math.min(zMax,gesture.startScale*(dist/gesture.startDist)));
-    const nextScale=zScale+(rawScale-zScale)*0.55;
+    // Filter ook het middelpunt van de twee vingers; dit haalt
+    // het heen-en-weer springen bij kleine handbewegingen eruit.
+    gesture.filteredMidX += (m.x-gesture.filteredMidX)*0.42;
+    gesture.filteredMidY += (m.y-gesture.filteredMidY)*0.42;
 
-    zScale=nextScale;
-    zX=mid.x-gesture.imageX*zScale;
-    zY=mid.y-gesture.imageY*zScale;
-    applyTransform();
+    const rawScale=gesture.baseScale*(d/gesture.startDist);
+    const ns=Math.max(zMin,Math.min(zMax,rawScale));
+
+    setTarget(
+      ns,
+      gesture.filteredMidX-gesture.imageX*ns,
+      gesture.filteredMidY-gesture.imageY*ns
+    );
     return;
   }
 
-  if(zPointers.size===1 && gesture && gesture.mode==='pan'){
-    const p=[...zPointers.values()][0];
-    const dx=p.x-gesture.startX;
-    const dy=p.y-gesture.startY;
+  if(activePointers.size===1 && gesture && gesture.type==='pan'){
+    const p=[...activePointers.values()][0];
+    const dx=p.x-gesture.sx,dy=p.y-gesture.sy;
+    if(Math.hypot(dx,dy)>7)gesture.moved=true;
 
-    if(Math.hypot(dx,dy)>7) gesture.moved=true;
-
-    if(gesture.moved && zScale>zMin+0.001){
+    if(gesture.moved && targetScale>zMin+0.001){
       e.preventDefault();
-      zX=gesture.baseX+dx;
-      zY=gesture.baseY+dy;
-      applyTransform();
+      setTarget(targetScale,gesture.bx+dx,gesture.by+dy);
     }
   }
-},{passive:false});
+},{capture:true,passive:false});
 
-function endPointer(e){
-  if(window.innerWidth>=1000) return;
+function pointerEnd(e){
+  if(!activePointers.has(e.pointerId))return;
 
-  const wasMoved=!!(gesture && gesture.moved);
-  const startedOnAct=!!(gesture && gesture.startedOnAct);
+  const moved=!!(gesture&&gesture.moved);
+  const onAct=!!(gesture&&gesture.onAct);
+  activePointers.delete(e.pointerId);
 
-  zPointers.delete(e.pointerId);
-  try{ zoomViewport.releasePointerCapture(e.pointerId); }catch(_){}
+  if(moved&&onAct)suppressClickUntil=Date.now()+650;
 
-  if(wasMoved && startedOnAct){
-    blockActClickUntil=Date.now()+650;
-  }
-
-  if(zPointers.size===1){
-    const p=[...zPointers.values()][0];
+  if(activePointers.size===1){
+    const p=[...activePointers.values()][0];
     gesture={
-      mode:'pan',
-      startX:p.x,
-      startY:p.y,
-      baseX:zX,
-      baseY:zY,
-      moved:false,
-      startedOnAct:false
+      type:'pan',
+      sx:p.x,sy:p.y,
+      bx:targetX,by:targetY,
+      moved:false,onAct:false
     };
-  }else if(zPointers.size===0){
+  }else if(activePointers.size===0){
     gesture=null;
   }
 }
-zoomViewport.addEventListener('pointerup',endPointer);
-zoomViewport.addEventListener('pointercancel',endPointer);
+document.addEventListener('pointerup',pointerEnd,true);
+document.addEventListener('pointercancel',pointerEnd,true);
 
 document.addEventListener('click',e=>{
-  if(Date.now()<blockActClickUntil){
-    const act=e.target.closest && e.target.closest('.act');
-    if(act){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-    }
+  if(Date.now()<suppressClickUntil && e.target.closest && e.target.closest('.act')){
+    e.preventDefault();
+    e.stopImmediatePropagation();
   }
 },true);
 
+function mobileZoomIn(){
+  if(window.innerWidth>=1000)return;
+  zoomAround(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,targetScale*1.28);
+}
+function mobileZoomOut(){
+  if(window.innerWidth>=1000)return;
+  zoomAround(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,targetScale/1.28);
+}
+function mobileZoomReset(){
+  if(window.innerWidth>=1000)return;
+  fitOverview();
+}
+
 zoomViewport.addEventListener('dblclick',e=>{
-  if(window.innerWidth>=1000) return;
-  if(zScale>zMin*1.15) fitOverview();
-  else animateZoomAt(e.clientX,e.clientY,Math.min(zMin*2.2,2.4));
+  if(window.innerWidth>=1000)return;
+  if(targetScale>zMin*1.15) fitOverview();
+  else zoomAround(e.clientX,e.clientY,Math.min(zMin*2.1,2.3));
 });
 
 function toggleFavPanel(){
   const p=document.getElementById('favPanel');
-  const open=p.style.display==='block' || getComputedStyle(p).display==='block';
-  if(open){ p.style.display='none'; return; }
+  const open=p.style.display==='block'||getComputedStyle(p).display==='block';
+  if(open){p.style.display='none';return;}
   showFavs();
 }
 function toggleNowPanel(){
   const p=document.getElementById('nowPanel');
-  const open=p.style.display==='block' || getComputedStyle(p).display==='block';
-  if(open){ p.style.display='none'; return; }
+  const open=p.style.display==='block'||getComputedStyle(p).display==='block';
+  if(open){p.style.display='none';return;}
   showNow();
-}
-
-function mobileZoomIn(){
-  if(window.innerWidth>=1000) return;
-  animateZoomAt(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,Math.min(zScale*1.32,zMax));
-}
-function mobileZoomOut(){
-  if(window.innerWidth>=1000) return;
-  animateZoomAt(zoomViewport.clientWidth/2,zoomViewport.clientHeight/2,Math.max(zScale/1.32,zMin));
-}
-function mobileZoomReset(){
-  if(window.innerWidth>=1000) return;
-  fitOverview();
 }
 
 window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
