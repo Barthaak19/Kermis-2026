@@ -81,13 +81,25 @@ html,body{width:100%;height:100%;overflow:hidden}
   touch-action:none !important;
 }
 
+
+#mobileZoomDock{
+  position:fixed;z-index:120;right:12px;bottom:18px;display:flex;gap:8px;
+}
+#mobileZoomDock button{
+  width:46px;height:46px;border:0;border-radius:50%;
+  background:rgba(15,15,15,.92);color:#fff;font-size:25px;font-weight:900;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;
+}
+@media(min-width:1000px){#mobileZoomDock{display:none}}
+
 </style>
 </head>
 <body>
 <div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button>
 <button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
-<button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button><button class="dark" onclick="location.href='zondag-native.html'">Volgende →</button>
+<button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button>
+<button class="dark" onclick="location.href='zondag-native.html'">Volgende →</button>
 </div>
 <div id="zoomViewport"><div id="wrap"><div id="sheet">
 <div class="title">ZATERDAG KERMIS</div>
@@ -112,6 +124,11 @@ html,body{width:100%;height:100%;overflow:hidden}
 </div>
 <div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
 </div></div></div>
+<div id="mobileZoomDock">
+<button type="button" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button>
+<button type="button" onclick="mobileZoomReset()" aria-label="Volledig overzicht">⤢</button>
+<button type="button" onclick="mobileZoomIn()" aria-label="Inzoomen">＋</button>
+</div>
 <div id="favPanel" class="pop"></div><div id="nowPanel" class="pop"></div><div id="toast"></div><div id="rainAlert"></div>
 <script>
 const START=14,END=26,HOURS=12,ACTS=[["Van Rooijen", "", "GESLOTEN", 20, 25], ["Het Café", "", "4 TINTEN GRIJS", 20, 25], ["Quicksilver", "BINNEN", "GESLOTEN", 21, 26], ["Quicksilver", "BUITEN", "DJ MDV", 21, 22.5], ["Quicksilver", "BUITEN", "LIKKE PEHP", 22.5, 25], ["'t Fortuin", "STRAAT", "DJ JACCO DEEN", 21, 22.5], ["'t Fortuin", "STRAAT", "LUUK VAN DER BOOM", 22.5, 25], ["'t Fortuin", "TENT", "DJ CEES WEEL", 21, 23], ["'t Fortuin", "TENT", "Q MUSIC 'FOUTE UUR LIVE'", 23, 26]],PAGE='zaterdag';
