@@ -1,4 +1,4 @@
-const CACHE = 'kermis-2026-pwa-v4-update-test';
+const CACHE = 'kermis-2026-pwa-v3';
 const APP_SHELL = [
   '/Kermis-2026/',
   '/Kermis-2026/index.html',
