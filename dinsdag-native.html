@@ -149,6 +149,27 @@ html,body{width:100%;height:100%;overflow:hidden}
   }
 }
 
+
+/* DEFINITIEVE vaste positie favorietenmelding — identiek op alle dagen */
+#toast{
+  position:fixed !important;
+  z-index:999999 !important;
+  left:50% !important;
+  right:auto !important;
+  top:auto !important;
+  bottom:calc(env(safe-area-inset-bottom, 0px) + 155px) !important;
+  transform:translateX(-50%) !important;
+  max-width:min(88vw,520px) !important;
+  white-space:normal !important;
+  text-align:center !important;
+  pointer-events:none !important;
+}
+@media(min-width:1000px){
+  #toast{
+    bottom:28px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -197,7 +218,25 @@ function fmt(h){let hh=Math.floor(h)%24,mm=Math.round((h-Math.floor(h))*60);retu
 function favId(a){return PAGE+'|'+a[0]+'|'+a[1]+'|'+a[2]+'|'+a[3]}
 function getFavs(){try{return JSON.parse(localStorage.getItem('kermis2026_favs')||'[]')}catch(e){return[]}}
 function setFavs(v){localStorage.setItem('kermis2026_favs',JSON.stringify(v))}
-function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>e.style.display='none',1500)}
+function toast(t){
+  const e=document.getElementById('toast');
+  e.textContent=t;
+  e.style.setProperty('display','block');
+  e.style.setProperty('z-index','999999','important');
+  e.style.setProperty('left','50%','important');
+  e.style.setProperty('right','auto','important');
+  e.style.setProperty('top','auto','important');
+  e.style.setProperty('transform','translateX(-50%)','important');
+
+  if(window.innerWidth < 1000){
+    e.style.setProperty('bottom','calc(env(safe-area-inset-bottom, 0px) + 155px)','important');
+  }else{
+    e.style.setProperty('bottom','28px','important');
+  }
+
+  clearTimeout(window.tt);
+  window.tt=setTimeout(()=>e.style.display='none',1500);
+}
 function buildTimeline(){const tl=document.getElementById('timeline');for(let i=0;i<=HOURS;i++){let l=document.createElement('div'),g=document.createElement('div'),left=(i/HOURS)*100;l.className='hourLabel';l.style.left=left+'%';l.textContent=fmt(START+i);g.className='hourLine';g.style.left=left+'%';tl.append(l,g)}}
 function renderActs(){const favs=getFavs();document.querySelectorAll('.track[data-venue]').forEach(t=>t.innerHTML='');ACTS.forEach(a=>{const[venue,sub,name,start,end]=a;const track=[...document.querySelectorAll('.track[data-venue]')].find(t=>t.dataset.venue===venue&&t.dataset.sub===sub);if(!track)return;const b=document.createElement('div');b.className='act'+(favs.includes(favId(a))?' fav':'');b.style.left=pct(start)+'%';b.style.width=(pct(end)-pct(start))+'%';b.innerHTML=`<span>${name}</span><span class="star">★</span>`;b.addEventListener('click',()=>{let f=getFavs(),id=favId(a),i=f.indexOf(id),added=i<0;if(added)f.push(id);else f.splice(i,1);setFavs(f);renderActs();toast((added?'⭐ Favoriet: ':'☆ Verwijderd: ')+name)});track.appendChild(b)})}
 function currentHour(){const n=new Date();let h=n.getHours()+n.getMinutes()/60+n.getSeconds()/3600;if(n.getHours()<3)h+=24;return h}
