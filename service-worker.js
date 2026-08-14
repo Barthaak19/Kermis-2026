@@ -1,20 +1,65 @@
-const CACHE='kermis-2026-pwa-v2';
-const ASSETS=["/Kermis-2026/", "/Kermis-2026/index.html", "/Kermis-2026/zaterdag-native.html", "/Kermis-2026/zondag-native.html", "/Kermis-2026/maandag-native.html", "/Kermis-2026/dinsdag-native.html", "/Kermis-2026/manifest.webmanifest", "/Kermis-2026/icon-192.png", "/Kermis-2026/icon-512.png", "/Kermis-2026/offline.html"];
-self.addEventListener('install',e=>{
+const CACHE = 'kermis-2026-pwa-v3';
+const APP_SHELL = [
+  '/Kermis-2026/',
+  '/Kermis-2026/index.html',
+  '/Kermis-2026/zaterdag-native.html',
+  '/Kermis-2026/zondag-native.html',
+  '/Kermis-2026/maandag-native.html',
+  '/Kermis-2026/dinsdag-native.html',
+  '/Kermis-2026/manifest.webmanifest',
+  '/Kermis-2026/icon-192.png',
+  '/Kermis-2026/icon-512.png',
+  '/Kermis-2026/offline.html'
+];
+
+self.addEventListener('install', event => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  event.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(APP_SHELL))
+  );
 });
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
-self.addEventListener('fetch',e=>{
-  const u=new URL(e.request.url);
-  if(u.hostname.includes('open-meteo.com')) return;
-  if(e.request.mode==='navigate'){
-    e.respondWith(fetch(e.request).then(r=>{
-      const copy=r.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return r;
-    }).catch(()=>caches.match(e.request).then(r=>r||caches.match('/Kermis-2026/offline.html'))));
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response && response.ok && request.method === 'GET') {
+      const cache = await caches.open(CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (err) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    if (request.mode === 'navigate') {
+      return caches.match('/Kermis-2026/offline.html');
+    }
+    throw err;
+  }
+}
+
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // Live weerdata nooit uit de app-cache halen.
+  if (url.hostname.includes('open-meteo.com')) {
+    event.respondWith(fetch(event.request));
     return;
   }
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+
+  // Alleen onze eigen GitHub Pages-app onderscheppen.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/Kermis-2026/')) {
+    event.respondWith(networkFirst(event.request));
+  }
 });

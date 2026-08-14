@@ -19,3 +19,11 @@ Zie [`LICENSE`](LICENSE) en [`COPYRIGHT.md`](COPYRIGHT.md) voor meer informatie.
 Feiten zoals artiestennamen, locaties en speeltijden worden niet als exclusief
 eigendom geclaimd. Materiaal en diensten van derden kunnen onder afzonderlijke
 voorwaarden vallen.
+
+
+## Automatische updates
+
+De PWA controleert bij het openen en wanneer de gebruiker terugkeert naar de app
+automatisch op een nieuwere service worker en nieuwe GitHub Pages-bestanden.
+Nieuwe versies worden zonder herinstallatie opgehaald. Favorieten blijven behouden,
+omdat die afzonderlijk in `localStorage` op het apparaat van de gebruiker staan.
