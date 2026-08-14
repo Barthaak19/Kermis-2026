@@ -35,8 +35,8 @@ body{min-height:100vh}
 .act .star{display:none;position:absolute;right:5px;top:4px;background:#ffd83d;border-radius:999px;padding:2px 5px;font-size:17px} .act.fav .star{display:block}
 #nowLine{position:absolute;top:68px;bottom:0;width:4px;background:#ff2222;z-index:30;box-shadow:0 0 10px rgba(255,0,0,.7);pointer-events:none}
 #nowBubble{position:absolute;top:44px;transform:translateX(-50%);background:#ff2222;color:white;font-weight:900;border-radius:8px;padding:5px 8px;z-index:31;pointer-events:none}
-.panel{margin:14px auto 0;width:calc(100% - 40px);background:#080808;color:white;border-radius:14px;padding:16px}
-.panel h2{margin:0 0 10px} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
+.panel{margin:14px 0 0;width:100%;background:#080808;color:white;border-radius:0;padding:16px 0 18px}
+.panel h2{margin:0 20px 10px} #weatherMeta{margin:0 20px 12px;color:#ddd} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
 .wcell{position:absolute;top:0;bottom:0;background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;border-right:1px solid #ddd} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
 #toast{position:fixed;z-index:100;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
 .pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
