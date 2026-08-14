@@ -95,7 +95,7 @@ html,body{width:100%;height:100%;overflow:hidden}
   background:rgba(15,15,15,.92);color:#fff;font-size:25px;font-weight:900;
   box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;
 }
-@media(max-width:999px){}@media(min-width:1000px){#mobileZoomDock{display:none}}
+@media(min-width:1000px){#mobileZoomDock{display:none}}
 
 
 .copyright{
@@ -109,31 +109,45 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 
+/* Favorietenmelding: op alle dagen exact dezelfde vaste plek */
 #toast{
   position:fixed !important;
   z-index:50000 !important;
   left:50% !important;
-  top:12px;
-  bottom:auto !important;
   transform:translateX(-50%) !important;
-  background:#111;
-  color:#fff;
-  padding:11px 16px;
-  border-radius:999px;
+  background:rgba(15,15,15,.96) !important;
+  color:#fff !important;
+  padding:12px 18px !important;
+  border-radius:999px !important;
   display:none;
   font-weight:800;
-  max-width:calc(100vw - 24px);
   text-align:center;
-  box-shadow:0 6px 22px rgba(0,0,0,.55);
-  pointer-events:none;
+  max-width:min(88vw,520px);
+  line-height:1.2;
+  white-space:normal;
+  pointer-events:none !important;
+  box-shadow:0 7px 24px rgba(0,0,0,.5);
 }
+
+/* Mobiel: bewust boven de zwevende zoomknoppen, zoals op de screenshot */
 @media(max-width:999px){
-  #toast{top:calc(var(--toastTop, 0px) + 10px) !important;}
+  #toast{
+    top:auto !important;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 155px) !important;
+  }
+}
+
+/* PC: compact onderin, zonder bediening te bedekken */
+@media(min-width:1000px){
+  #toast{
+    top:auto !important;
+    bottom:28px !important;
+  }
 }
 
 </style>
 </head>
-<body data-build="toast-top-sat-sun-v1">
+<body>
 <div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button>
 <button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
@@ -516,17 +530,6 @@ document.addEventListener('click', e=>{
     }
   }
 }, true);
-
-
-function positionToastBelowTopbar(){
-  const tb=document.getElementById('topbar');
-  if(tb){
-    document.documentElement.style.setProperty('--toastTop', tb.offsetHeight+'px');
-  }
-}
-positionToastBelowTopbar();
-window.addEventListener('resize',positionToastBelowTopbar);
-setTimeout(positionToastBelowTopbar,100);
 
 </script>
 </body></html>
