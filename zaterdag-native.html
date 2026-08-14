@@ -318,5 +318,60 @@ zoomViewport.addEventListener('touchend', e=>{
   if(e.touches.length===0) __oneFingerPanStart=null;
 },{passive:true});
 
+
+/* Slepen mag nu ook beginnen bovenop een optreden.
+   Korte tik = favoriet, beweging = slepen. */
+let __actDrag = null;
+let __suppressActClickUntil = 0;
+
+document.addEventListener('touchstart', e=>{
+  if(window.innerWidth>=1000) return;
+  const act=e.target.closest && e.target.closest('.act');
+  if(!act || e.touches.length!==1 || zScale <= zMin + 0.001) return;
+
+  const t=e.touches[0];
+  __actDrag={
+    x:t.clientX, y:t.clientY,
+    zx:zX, zy:zY,
+    moved:false
+  };
+},{passive:true});
+
+document.addEventListener('touchmove', e=>{
+  if(window.innerWidth>=1000 || !__actDrag || e.touches.length!==1) return;
+
+  const t=e.touches[0];
+  const dx=t.clientX-__actDrag.x;
+  const dy=t.clientY-__actDrag.y;
+
+  if(Math.hypot(dx,dy)>7){
+    __actDrag.moved=true;
+    e.preventDefault();
+    zX=__actDrag.zx+dx;
+    zY=__actDrag.zy+dy;
+    zApply();
+  }
+},{passive:false});
+
+document.addEventListener('touchend', e=>{
+  if(!__actDrag) return;
+  if(__actDrag.moved){
+    __suppressActClickUntil=Date.now()+500;
+  }
+  __actDrag=null;
+},{passive:true});
+
+/* Als er net gesleept is, mag de daaropvolgende synthetische click
+   niet per ongeluk de artiest als favoriet aan/uit zetten. */
+document.addEventListener('click', e=>{
+  if(Date.now() < __suppressActClickUntil){
+    const act=e.target.closest && e.target.closest('.act');
+    if(act){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }
+}, true);
+
 </script>
 </body></html>
