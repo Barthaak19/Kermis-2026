@@ -38,7 +38,7 @@ body{min-height:100vh}
 .panel{margin:14px 0 0;width:100%;background:#080808;color:white;border-radius:0;padding:16px 0 18px}
 .panel h2{margin:0 20px 10px} #weatherMeta{margin:0 20px 12px;color:#ddd} #weatherGrid{position:relative;height:180px;margin-left:calc(var(--labelw) + var(--subw));width:calc(100% - var(--labelw) - var(--subw) - 40px);background:#333;border-radius:10px;overflow:hidden}
 .wcell{position:absolute;top:0;bottom:0;background:#f5f5f5;color:#111;text-align:center;padding:10px 4px;border-right:1px solid #ddd} .wtime{font-weight:900} .wicon{font-size:28px;margin:8px 0} .wtemp{font-size:24px;font-weight:900} .small{font-size:12px;margin-top:4px}
-#toast{position:fixed;z-index:10000;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:white;padding:11px 16px;border-radius:999px;display:none;font-weight:800}
+
 .pop{position:fixed;z-index:90;left:10px;right:10px;top:65px;max-height:55vh;overflow:auto;background:#111;color:white;border-radius:14px;padding:14px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.45)}
 .item{padding:8px 0;border-bottom:1px solid #333}
 #rainAlert{position:fixed;z-index:85;left:10px;right:10px;bottom:72px;display:none;background:#0d2840;color:white;border-radius:12px;padding:10px 12px;font-weight:800;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
@@ -81,10 +81,6 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 
-/* Betrouwbare mobiele zoomknoppen voor zondag/maandag/dinsdag */
-
-
-
 /* Optredens mogen ook als sleep-oppervlak dienen */
 .act{
   touch-action:none !important;
@@ -99,7 +95,7 @@ html,body{width:100%;height:100%;overflow:hidden}
   background:rgba(15,15,15,.92);color:#fff;font-size:25px;font-weight:900;
   box-shadow:0 4px 14px rgba(0,0,0,.45);touch-action:manipulation;
 }
-@media(max-width:999px){#toast{bottom:88px;max-width:calc(100vw - 24px);text-align:center}}@media(min-width:1000px){#mobileZoomDock{display:none}}
+@media(max-width:999px){}@media(min-width:1000px){#mobileZoomDock{display:none}}
 
 
 .copyright{
@@ -112,9 +108,32 @@ html,body{width:100%;height:100%;overflow:hidden}
   letter-spacing:.1px;
 }
 
+
+#toast{
+  position:fixed !important;
+  z-index:50000 !important;
+  left:50% !important;
+  top:12px;
+  bottom:auto !important;
+  transform:translateX(-50%) !important;
+  background:#111;
+  color:#fff;
+  padding:11px 16px;
+  border-radius:999px;
+  display:none;
+  font-weight:800;
+  max-width:calc(100vw - 24px);
+  text-align:center;
+  box-shadow:0 6px 22px rgba(0,0,0,.55);
+  pointer-events:none;
+}
+@media(max-width:999px){
+  #toast{top:calc(var(--toastTop, 0px) + 10px) !important;}
+}
+
 </style>
 </head>
-<body>
+<body data-build="toast-top-sat-sun-v1">
 <div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button>
 <button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
@@ -143,10 +162,12 @@ html,body{width:100%;height:100%;overflow:hidden}
 </div><div></div></div>
 </div>
 <div class="panel"><h2>📍 WEER IN WERVERSHOOF</h2><div id="weatherMeta">Live weer laden...</div><div id="weatherGrid"></div></div>
+
+<footer class="copyright">
+  © 2026 Bart Haakman · Kermis Wervershoof — interactieve blokkenschema-app
+</footer>
+
 </div></div></div>
-
-
-
 <div id="mobileZoomDock">
 <button type="button" onclick="mobileZoomOut()" aria-label="Uitzoomen">−</button>
 <button type="button" onclick="mobileZoomReset()" aria-label="Volledig overzicht">⤢</button>
@@ -176,7 +197,7 @@ buildTimeline();renderActs();updateNowLine();weather();rainAlert();setInterval(u
 const zoomViewport = document.getElementById('zoomViewport');
 const zoomSheet = document.getElementById('sheet');
 
-let zScale = 1, zMin = 1, zMax = 6, zX = 0, zY = 0;
+let zScale = 1, zMin = 1, zMax = 5, zX = 0, zY = 0;
 let zPointers = new Map();
 let zStartScale = 1, zStartDist = 0, zStartX = 0, zStartY = 0, zStartMid = {x:0,y:0};
 let zMoved = false;
@@ -247,7 +268,6 @@ function zoomAt(clientX, clientY, newScale){
 
 zoomViewport.addEventListener('pointerdown', e=>{
   if (window.innerWidth >= 1000) return;
-  if(e.target.closest && (e.target.closest('button') || e.target.closest('.topbar'))) return;
   if (e.target.closest && e.target.closest('.act')) return;
   zoomViewport.setPointerCapture(e.pointerId);
   zPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -337,36 +357,6 @@ function mobileZoomReset(){
   if(window.innerWidth>=1000) return;
   fitOverview();
 }
-
-
-let __touchStartDist=0, __touchStartScale=1, __touchMid={x:0,y:0};
-zoomViewport.addEventListener('touchstart', e=>{
-  if(window.innerWidth>=1000) return;
-  if(e.touches.length===2){
-    e.preventDefault();
-    const a=e.touches[0], b=e.touches[1];
-    __touchStartDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-    __touchStartScale=zScale;
-    __touchMid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
-  }
-},{passive:false});
-zoomViewport.addEventListener('touchmove', e=>{
-  if(window.innerWidth>=1000 || e.touches.length!==2 || !__touchStartDist) return;
-  e.preventDefault();
-  const a=e.touches[0], b=e.touches[1];
-  const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-  const mid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
-  const newScale=Math.max(zMin,Math.min(zMax,__touchStartScale*(d/__touchStartDist)));
-  const ix=(__touchMid.x-zX)/__touchStartScale;
-  const iy=(__touchMid.y-zY)/__touchStartScale;
-  zScale=newScale;
-  zX=mid.x-ix*zScale;
-  zY=mid.y-iy*zScale;
-  zApply();
-},{passive:false});
-zoomViewport.addEventListener('touchend', e=>{
-  if(e.touches.length<2) __touchStartDist=0;
-},{passive:true});
 
 
 /* Eén-vinger slepen: actief zodra je verder dan het overzicht bent ingezoomd. */
@@ -526,6 +516,17 @@ document.addEventListener('click', e=>{
     }
   }
 }, true);
+
+
+function positionToastBelowTopbar(){
+  const tb=document.getElementById('topbar');
+  if(tb){
+    document.documentElement.style.setProperty('--toastTop', tb.offsetHeight+'px');
+  }
+}
+positionToastBelowTopbar();
+window.addEventListener('resize',positionToastBelowTopbar);
+setTimeout(positionToastBelowTopbar,100);
 
 </script>
 </body></html>
