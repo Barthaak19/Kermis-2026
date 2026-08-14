@@ -187,13 +187,13 @@ html,body{width:100%;height:100%;overflow:hidden}
 
 </style>
 
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="/Kermis-2026/manifest.webmanifest">
 <meta name="theme-color" content="#FFD83D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Kermis 2026">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="/Kermis-2026/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/Kermis-2026/icon-192.png">
 
 </head>
 <body>
@@ -526,7 +526,9 @@ setTimeout(fitOverview,100);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('/Kermis-2026/service-worker.js', {scope:'/Kermis-2026/'})
+      .then(() => console.log('Kermis PWA service worker actief'))
+      .catch(err => console.error('Service worker fout', err));
   });
 }
 </script>
