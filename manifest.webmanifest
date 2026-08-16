@@ -2,13 +2,10 @@
   "id": "/Kermis-2026/",
   "name": "Kermis Wervershoof 2026",
   "short_name": "Kermis 2026",
-  "description": "Interactief blokkenschema voor Kermis Wervershoof 2026 met favorieten, live tijdlijn en weer.",
+  "description": "Interactief blokkenschema voor Kermis Wervershoof 2026 met favorieten, live tijdlijn, weer en besloten vriendenlocaties.",
   "start_url": "/Kermis-2026/",
   "scope": "/Kermis-2026/",
   "display": "standalone",
-  "display_override": [
-    "standalone"
-  ],
   "background_color": "#111111",
   "theme_color": "#FFD83D",
   "lang": "nl-NL",
@@ -24,13 +21,7 @@
       "src": "/Kermis-2026/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/Kermis-2026/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }

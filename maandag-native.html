@@ -190,22 +190,14 @@ html,body{width:100%;height:100%;overflow:hidden}
 }
 
 </style>
-
-<link rel="manifest" href="/Kermis-2026/manifest.webmanifest">
-<meta name="theme-color" content="#FFD83D">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kermis 2026">
-<link rel="apple-touch-icon" href="/Kermis-2026/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/Kermis-2026/icon-192.png">
-
-</head>
+<link rel="manifest" href="/Kermis-2026/manifest.webmanifest"><meta name="theme-color" content="#FFD83D"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kermis 2026"><link rel="apple-touch-icon" href="/Kermis-2026/icon-192.png"></head>
 <body>
 <div class="topbar" id="topbar">
 <button class="dark" onclick="location.href='index.html'">🏠 Home</button>
 <button class="dark" onclick="location.href='zondag-native.html'">← Vorige</button>
 <button class="primary" onclick="toggleNowPanel()">🔴 NU / STRAKS</button>
 <button class="primary" onclick="toggleFavPanel()">⭐ Favorieten</button>
+<button class="dark" onclick="location.href='vrienden.html'">🔒 Vrienden</button>
 <button class="dark" onclick="location.href='dinsdag-native.html'">Volgende →</button>
 </div>
 <div id="zoomViewport"><div id="wrap"><div id="sheet">
@@ -525,52 +517,4 @@ window.addEventListener('resize',()=>requestAnimationFrame(fitOverview));
 setTimeout(fitOverview,100);
 
 </script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  let reloadingForUpdate = false;
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForUpdate) return;
-    reloadingForUpdate = true;
-    window.location.reload();
-  });
-
-  window.addEventListener('load', async () => {
-    try {
-      const reg = await navigator.serviceWorker.register(
-        '/Kermis-2026/service-worker.js',
-        { scope: '/Kermis-2026/', updateViaCache: 'none' }
-      );
-
-      // Meteen controleren of GitHub een nieuwere versie heeft.
-      reg.update();
-
-      // Als er al een nieuwe worker wacht, activeer die direct.
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-
-      reg.addEventListener('updatefound', () => {
-        const worker = reg.installing;
-        if (!worker) return;
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            // De service worker gebruikt skipWaiting(), dus controllerchange volgt vanzelf.
-          }
-        });
-      });
-
-      // Controleer opnieuw zodra de gebruiker terugkeert naar de app.
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') reg.update();
-      });
-      window.addEventListener('focus', () => reg.update());
-    } catch (err) {
-      console.error('Service worker fout', err);
-    }
-  });
-}
-</script>
-
-</body></html>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('/Kermis-2026/service-worker.js',{scope:'/Kermis-2026/',updateViaCache:'none'});r.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update()});window.addEventListener('focus',()=>r.update())}catch(e){console.error(e)}})}</script></body></html>

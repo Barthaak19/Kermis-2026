@@ -5,64 +5,7 @@
 -->
 <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kermis Wervershoof 2026</title>
 <style>html,body{margin:0;background:#111;color:#fff;font-family:Arial,Helvetica,sans-serif}body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}.wrap{width:min(680px,100%)}h1{text-align:center;font-size:clamp(34px,8vw,60px);margin:0 0 10px}.sub{text-align:center;color:#ccc;margin-bottom:28px;font-size:18px}.grid{display:grid;gap:16px}a{display:block;text-decoration:none;color:#111;background:#ffd83d;border-radius:18px;padding:24px 20px;font-size:clamp(26px,6vw,38px);font-weight:900;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.35)}a:active{transform:scale(.985)}.small{display:block;margin-top:6px;font-size:15px;font-weight:700;opacity:.7}.today{outline:4px solid white;position:relative}.today:before{content:'VANDAAG';position:absolute;right:12px;top:10px;font-size:12px;background:#111;color:#fff;padding:4px 7px;border-radius:999px}.copyright{margin-top:24px;text-align:center;color:#999;font-size:12px;line-height:1.5}
-</style>
-<link rel="manifest" href="/Kermis-2026/manifest.webmanifest">
-<meta name="theme-color" content="#FFD83D">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kermis 2026">
-<link rel="apple-touch-icon" href="/Kermis-2026/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/Kermis-2026/icon-192.png">
-
-</head>
+</style><link rel="manifest" href="/Kermis-2026/manifest.webmanifest"><meta name="theme-color" content="#FFD83D"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kermis 2026"><link rel="apple-touch-icon" href="/Kermis-2026/icon-192.png"></head>
 <body><div class="wrap"><h1>KERMIS WERVERSHOOF 2026</h1><div class="sub">Blokkenschema's + live weer + favorieten</div><div class="grid">
 <a href="zaterdag-native.html">ZATERDAG<span class="small">15 augustus</span></a><a href="zondag-native.html">ZONDAG<span class="small">16 augustus</span></a><a href="maandag-native.html">MAANDAG<span class="small">17 augustus</span></a><a href="dinsdag-native.html">DINSDAG<span class="small">18 augustus</span></a>
-</div><div class="copyright">© 2026 Bart Haakman · Kermis Wervershoof — interactieve blokkenschema-app</div></div><script>const m={'2026-08-15':'zaterdag-native.html','2026-08-16':'zondag-native.html','2026-08-17':'maandag-native.html','2026-08-18':'dinsdag-native.html'},d=new Date(),k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.querySelectorAll('a').forEach(a=>{if(a.getAttribute('href')===m[k])a.classList.add('today')});</script>
-<script>
-if ('serviceWorker' in navigator) {
-  let reloadingForUpdate = false;
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloadingForUpdate) return;
-    reloadingForUpdate = true;
-    window.location.reload();
-  });
-
-  window.addEventListener('load', async () => {
-    try {
-      const reg = await navigator.serviceWorker.register(
-        '/Kermis-2026/service-worker.js',
-        { scope: '/Kermis-2026/', updateViaCache: 'none' }
-      );
-
-      // Meteen controleren of GitHub een nieuwere versie heeft.
-      reg.update();
-
-      // Als er al een nieuwe worker wacht, activeer die direct.
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-
-      reg.addEventListener('updatefound', () => {
-        const worker = reg.installing;
-        if (!worker) return;
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            // De service worker gebruikt skipWaiting(), dus controllerchange volgt vanzelf.
-          }
-        });
-      });
-
-      // Controleer opnieuw zodra de gebruiker terugkeert naar de app.
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') reg.update();
-      });
-      window.addEventListener('focus', () => reg.update());
-    } catch (err) {
-      console.error('Service worker fout', err);
-    }
-  });
-}
-</script>
-
-</body></html>
+</div><div class="copyright">© 2026 Bart Haakman · Kermis Wervershoof — interactieve blokkenschema-app<a href="vrienden.html">🔒 VRIENDEN<span class="small">besloten groep</span></a></div></div><script>const m={'2026-08-15':'zaterdag-native.html','2026-08-16':'zondag-native.html','2026-08-17':'maandag-native.html','2026-08-18':'dinsdag-native.html'},d=new Date(),k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');document.querySelectorAll('a').forEach(a=>{if(a.getAttribute('href')===m[k])a.classList.add('today')});</script><script>if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('/Kermis-2026/service-worker.js',{scope:'/Kermis-2026/',updateViaCache:'none'});r.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update()});window.addEventListener('focus',()=>r.update())}catch(e){console.error(e)}})}</script></body></html>
