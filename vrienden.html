@@ -130,8 +130,38 @@ async function loadAll(){const [{data:m},{data:l}]=await Promise.all([sb.from('f
     markers.set(x.user_id,mk);
   }
 }});for(const[id,mk]of markers)if(!present.has(id)){map.removeLayer(mk);markers.delete(id)}if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:18})}
+
+async function startNativeBackgroundLocation(){
+  try{
+    if(!window.KermisNative || typeof window.KermisNative.startLocationSharing!=='function') return false;
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session || !session.user) return false;
+    window.KermisNative.startLocationSharing(
+      String(groupId),
+      String(user.id),
+      String(session.access_token||''),
+      String(session.refresh_token||''),
+      String(cfg.supabaseUrl||''),
+      String(cfg.supabaseAnonKey||'')
+    );
+    return true;
+  }catch(e){
+    console.error('Native background location start failed',e);
+    return false;
+  }
+}
+
+function stopNativeBackgroundLocation(){
+  try{
+    if(window.KermisNative && typeof window.KermisNative.stopLocationSharing==='function'){
+      window.KermisNative.stopLocationSharing();
+    }
+  }catch(e){console.error(e)}
+}
+
 async function sharing(on){
   if(on){
+    startNativeBackgroundLocation();
     if(!navigator.geolocation){
       shareToggle.checked=true;
       shareText.textContent='Aan — je vrienden kunnen je locatie zien.';
@@ -184,6 +214,7 @@ async function sharing(on){
     });
 
   }else{
+    stopNativeBackgroundLocation();
     if(watchId!==null){
       navigator.geolocation.clearWatch(watchId);
       watchId=null;
@@ -228,6 +259,7 @@ async function start(){
   shareToggle.checked=wasSharing;
 
   if(wasSharing){
+    startNativeBackgroundLocation();
     shareText.textContent='Aan — je vrienden kunnen je locatie zien.';
     if(own?.updated_at){
       status.textContent='';
